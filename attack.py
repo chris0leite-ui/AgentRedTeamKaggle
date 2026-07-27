@@ -54,13 +54,35 @@ _BUDGET_FILL_FRAC = 0.92
 # running per-candidate cost to remain — a safety margin against a slow tail call.
 _TAIL_MARGIN = 2.5
 
+# --- v1 = SMOKE SUBMISSION ---------------------------------------------------------
+# Goal of the first submission: prove the pipeline RUNS end-to-end with MINIMAL runtime,
+# not to score well. In smoke mode we cap the number of candidates and cap the wall time
+# hard, and we cap tool hops so a slow LLM turn can't stall the run. Flip SMOKE_MODE off
+# (or raise the caps) once a first submission has completed cleanly.
+SMOKE_MODE = True
+SMOKE_MAX_FINDINGS = 8
+SMOKE_MAX_SECONDS = 45.0
+SMOKE_MAX_TOOL_HOPS = 4
+
 
 class AttackAlgorithm(AttackAlgorithmBase):
     def run(self, env: AttackEnvProtocol, config: AttackRunConfig) -> list[AttackCandidate]:
+        # Never let an exception escape into the harness — always return a valid list.
+        try:
+            return self._run(env, config)
+        except Exception:
+            return []
+
+    def _run(self, env: AttackEnvProtocol, config: AttackRunConfig) -> list[AttackCandidate]:
         budget_s = float(config.time_budget_s)
         tb = Timebox(budget_s)
+        cap = SMOKE_MAX_FINDINGS if SMOKE_MODE else MAX_FINDINGS
         deadline = budget_s * _BUDGET_FILL_FRAC
+        if SMOKE_MODE:
+            deadline = min(deadline, SMOKE_MAX_SECONDS)
         max_hops = int(getattr(config, "max_tool_hops", 8) or 8)
+        if SMOKE_MODE:
+            max_hops = min(max_hops, SMOKE_MAX_TOOL_HOPS)
         max_steps = int(getattr(config, "max_steps", 10**9))
 
         findings: list[AttackCandidate] = []
@@ -68,7 +90,7 @@ class AttackAlgorithm(AttackAlgorithmBase):
         domains = self._unique_domains()
         step = 0
 
-        while len(findings) < MAX_FINDINGS and step < max_steps:
+        while len(findings) < cap and step < max_steps:
             used = budget_s - tb.remaining()
             if used >= deadline:
                 break

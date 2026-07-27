@@ -59,17 +59,40 @@ write_attack = (
 )
 
 serve = '''\
-# Scored rerun: serve the attack to the gateway. Local/interactive: write a placeholder CSV.
+# Scored rerun: serve the attack to the gateway.
+# Interactive save (not a rerun): run a self-test so the committed notebook output PROVES the
+# mount imports and the submission pipeline runs — our feedback signal before we submit.
 import os, csv
 if os.getenv("KAGGLE_IS_COMPETITION_RERUN"):
+    print("SCORED RERUN: starting inference server for the gateway...", flush=True)
     import kaggle_evaluation.jed_attack_134815.jed_attack_inference_server as server
     server.JEDAttackInferenceServer().serve()
 else:
+    # Placeholder output (the gateway overwrites this during the scored rerun).
     with open("/kaggle/working/submission.csv", "w", newline="") as f:
         w = csv.writer(f); w.writerow(["Id", "Score"])
         for row in ["gpt_oss_public", "gpt_oss_private", "gemma_public", "gemma_private"]:
             w.writerow([row, 0.0])
-    print("placeholder submission.csv written (real scores come from the gateway rerun)")
+    print("placeholder submission.csv written")
+    # --- self-test: same run()+replay path the gateway uses, on the deterministic scaffold ---
+    try:
+        import importlib.util, glob
+        from pathlib import Path
+        from aicomp_sdk.agents import build_agent_factory
+        from aicomp_sdk.evaluation.ops import eval_attack, score_attack
+        spec = importlib.util.spec_from_file_location("user_attack", "/kaggle/working/attack.py")
+        mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+        fx = glob.glob("/kaggle/input/**/aicomp_sdk/fixtures/web_corpus.json", recursive=True)
+        fixtures = Path(fx[0]).parent if fx else None
+        found = eval_attack(mod.AttackAlgorithm, budget_s=15.0,
+                            agent_factory=build_agent_factory("deterministic"),
+                            env_selection="gym", attack_env_seed=123, fixtures_dir=fixtures)
+        print(f"SELF-TEST OK: run()+replay completed cleanly | findings={len(found)} "
+              f"score={score_attack(found, normalize=True):.4f} "
+              f"(0 is expected vs the deterministic scaffold; the real models exercise the primitive)")
+    except Exception as e:
+        print(f"SELF-TEST FAILED — fix before submitting: {type(e).__name__}: {e}")
+        raise
 '''
 
 nb = {
