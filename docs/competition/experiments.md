@@ -5,6 +5,33 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3f — trivial diagnostic result: NOT our attack logic, NOT our config
+- **Date:** 2026-07-27
+- **Setup:** submitted `attack-trivial-diag` (ref 55034976) — 5 STATIC candidates, zero live probing.
+- **Observations:**
+  - Trivial commit-run COMPLETE; self-test confirmed `run()` returns 5 valid candidates (attack.py
+    loads + runs). But the **scored submission is PENDING 50+ min** (v1 now ~4.5h) — neither errors.
+  - **Removing live probing did NOT fix it** ⇒ live probing / attack logic is NOT the cause.
+  - Pulled 4 working kernels' metadata (official starter, pilkwang same-primitive, k1-short,
+    boristown). **Our config is IDENTICAL:** GPU on, **internet off**, T4, competition-source only,
+    no dataset/model sources. ⇒ not a config bug; the internet-off model-load theory is dead (they're
+    offline too, so the mount provides the weights).
+  - Only delta: working kernels are `is_private=False`, ours `is_private=True` — **but that's almost
+    certainly sampling bias** (I can only find PUBLIC kernels; private submissions that score fine are
+    invisible). Private submission kernels normally score.
+- **Result:** ruled out attack logic, live probing, AND config. No fixable defect found on our side —
+  our submission matches ones that score. Both submissions ACCEPTED + PENDING (not rejected/errored).
+  Remaining possibilities: platform/queue timing (colleague's fast run may have been low-queue), or an
+  account-level issue not visible or fixable from here.
+- **Recommended next steps:**
+  - **Ask the colleague ONE thing: was their fast-scoring kernel private or public?** Zero-cost test
+    of the only config delta, no attack leaked.
+  - Keep monitoring both refs; if either eventually posts a score, it was slow-queue, not broken.
+  - If both stay empty for many hours while the LB shows fresh submissions scoring, escalate via the
+    competition discussion / Kaggle support with refs 55029825, 55034976 (needs the user — I can't
+    read discussions or post).
+  - Do NOT make our kernel public to test is_private unless the user accepts leaking our attack.
+
 ## E3e — competitor-kernel research (forum unreadable; kernels encode the fixes)
 - **Date:** 2026-07-27
 - **Method:** Kaggle discussions are JS-rendered → unreadable by WebFetch/WebSearch, and the CLI has
