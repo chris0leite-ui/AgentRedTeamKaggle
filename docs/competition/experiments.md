@@ -5,6 +5,31 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3j — offline scorer SMOKE run works; gpt_oss replay = 4.66s/cand (implies a gateway-overhead gap)
+- **Date:** 2026-07-27
+- **What:** First run of `lab_score_smoke/` (`attack-score-smoke`) — gpt_oss only, SCORE_N=3. Proves
+  the whole offline-scorer loop runs on Kaggle: gym env via `build_attack_env("gym")`, real GGUF
+  agent, per-candidate timed replay, `summarize_attack_findings`. Completed in ~3.5 min.
+- **Observations (gpt_oss):**
+  - load **56s**; generation `run()` → 3 candidates in 18.1s = **6.03s/cand**; replay **4.66s/cand**;
+    **fire-rate 100%** (3/3); sample raw 54 (=3×18), unique_cells 3 → sample score 0.27.
+  - scorer's own projection: `replay_safe_N = 0.9·9000/4.66 = 1739` → **projected row 156.5**.
+  - **Generation (6.03s) is SLOWER per candidate than replay (4.66s)** — with live-fill, generation's
+    9000s budget would bind before replay's. (Blind/static emission removes generation probing → moot.)
+- **The gap that matters (gateway-overhead factor, as the plan warned):**
+  - Offline replay says 4.66s/cand → N≈1739 → 156.5. But the **leaderboard top is 111.795 = 1242
+    candidates** ⇒ real replay ≈ `9000/1242 = 7.24s/cand`. So offline **underestimates replay cost by
+    ~1.55×** (4.66 → 7.24). Two readings, not yet distinguishable:
+    (a) real gateway adds gRPC/RemoteAgent + fresh-env overhead our in-process loop skips (→ true N≈1242); or
+    (b) our minimal 1-hop primitive is genuinely faster than the field's candidates (→ we could exceed 112).
+  - **Do NOT size a submission to 1739.** Until calibrated, apply the ~1.55× margin → size to ≈**1200**.
+- **Recommended next steps:**
+  - (needs go-ahead) Run the **full** scorer (`lab_score/`, both models, SCORE_N=24) for a tighter
+    gpt_oss estimate + gemma's numbers (gemma loads slow ~187s but the lab showed it's fast/candidate).
+  - Then ONE **asymmetric** real submission (different N per model) resolves BOTH the overhead factor
+    AND mean-vs-min at once (the two things the offline scorer cannot settle).
+  - Fold a `GATEWAY_OVERHEAD` margin (start 1.55) into the scorer's `replay_safe_N` before trusting it.
+
 ## E3i — trivial diagnostic scored 0.450 → blind/static emission WORKS (corrects E3g arithmetic)
 - **Date:** 2026-07-27
 - **Observations:**
