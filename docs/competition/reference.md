@@ -72,11 +72,16 @@ Notebook submission. The notebook: (1) adds the mounted `aicomp_sdk` + `kaggle_e
 **2 models (gpt_oss, gemma) × 2 guardrails (public = Optimal, private = hidden)** → 4 rows
 (`gpt_oss_public`, `gpt_oss_private`, `gemma_public`, `gemma_private`).
 
-**⚠️ How the 4 rows combine into the public LB number is NOT in the SDK** (it's a Kaggle-side
-metric). We had assumed `mean(gpt_oss_public, gemma_public)`, but that is **unverified** — and it's
-decisive: if it's a **mean/sum**, boosting the fast model (gemma) lifts the score; if it's a **min**,
-only the slower model (gpt_oss) matters and gemma headroom is worthless. Resolve before betting on
-per-model sizing (check the competition metric page, or read it off an *asymmetric* submission).
+**How the 4 rows combine is NOT in the SDK (Kaggle-side metric), but the public LB number is
+`mean(gpt_oss_public, gemma_public)` — CONFIRMED (E3k).** Source: top-competitor notebooks
+(pilkwang v3.1.2, source-verified across 7 public kernels) state it verbatim — *"Public score =
+mean(gpt_oss_public, gemma_public)"* and *"a replay-drift timeout zeroes a whole model row and
+halves the mean."* The host docs (mbhatt1.github.io) give the per-row formula but omit the
+combination. Our own submissions are consistent (symmetric rows can't distinguish mean from min,
+but they rule out sum). **Consequence: it's a MEAN, so boosting the fast model (gemma) lifts the
+score — per-model adaptive sizing is worth it, and maxing gemma toward the 2000-cap is the play.**
+(An asymmetric submission is still useful, but now only to calibrate the gateway-overhead factor,
+not mean-vs-min.)
 
 ### Gateway structure (`jed_attack_gateway.py`, read 2026-07-27)
 - **Generation is per-model.** `_run_attack_for_model(model)` is called once per model in a loop; each

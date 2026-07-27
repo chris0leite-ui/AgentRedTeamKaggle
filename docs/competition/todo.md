@@ -15,9 +15,12 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
   the *generation* budget (probe ~5.4s), but *replay* costs ~7.2s → SMOKE-off would over-return for
   gpt_oss and **time out replay → INVALID_SUBMISSION (0)**. Size to the **replay** budget (est. replay
   cost + cushion), hard-cap 2000. (E3c.)
-- [ ] **Resolve mean-vs-min** (decides whether gemma sizing is worth anything): the public-LB row
-  combination isn't in the SDK. Check the competition metric page, or read it off an asymmetric
-  submission (~146 ⇒ mean; ~112 ⇒ min). (E3c.)
+- [x] ~~Resolve mean-vs-min~~ **RESOLVED (E3k): it's the MEAN** of the two public rows (pilkwang
+  v3.1.2, source-verified). ⇒ per-model sizing pays off; **max gemma toward the 2000-cap** + get
+  gpt_oss as high as its CoT cost allows. Asymmetric submission now only calibrates gateway overhead.
+- [ ] **gpt_oss CoT is the slow-row ceiling (E3k):** competitors see ~24s/cand on gpt_oss (chain-of-
+  thought) vs our lab's 4.66s. Test a CoT-suppressing "collapse/forged-analysis" prompt variant in
+  `lab/`; measure whether our gpt_oss replay stays ~5s under realistic conditions.
 - [ ] **v2 baseline — PIVOT to blind/static emission (E3i, needs go-ahead after scorer run):** emit N
   unique-domain exfil candidates with NO live probing (proven by trivial ref 55034976 → 0.450 = all 5
   static fired). Sidesteps the model-load truncation that capped v1 at 1 candidate. Size N to the
