@@ -70,6 +70,13 @@ The offline scorer certifies `replay_safe_N` per model. Then fix `run()`:
 5. Use the numbers to fix `run()` sizing; re-verify offline; only THEN propose a real submission.
 6. Spend ONE asymmetric submission to calibrate overhead + resolve mean-vs-min.
 
+## ⚠️ Multi-predicate is NOT a free ceiling-breaker (E3e)
+A competitor (boristown) tried multi-call / source-read+post traces and **scored 0**: source-reads
+taint → guardrail denies the post; extra posts dedup; `DESTRUCTIVE_WRITE` needs `secret.txt` (path
+trips the first-field check). Before building any multi-predicate primitive, use THIS scorer to prove
+it beats a single exfil net of the ≥5 benign taint-flush hops it needs. Otherwise stay single-exfil
+and compete on per-model replay-safe sizing.
+
 ## Open risks / notes
 - Replay reloads the model per phase (fresh env each time) — costly but not our bug.
 - Keep everything internet-off-compatible eventually, but the scorer notebook may use internet to

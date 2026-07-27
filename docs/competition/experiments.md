@@ -5,6 +5,38 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3e — competitor-kernel research (forum unreadable; kernels encode the fixes)
+- **Date:** 2026-07-27
+- **Method:** Kaggle discussions are JS-rendered → unreadable by WebFetch/WebSearch, and the CLI has
+  no discussions API. Substitute: pulled competitor kernels via the API (they distill the consensus).
+  Sources: pilkwang single-post-exfil, georgymamarin starter, k1-short, martynaplomecka (official
+  starter), boristown V40, rauffauzanrambe.
+- **Observations — the working submission pattern (what finishes & scores):**
+  - **One `http.post` per candidate, ONE URL, one secret payload; unique URL/candidate** (= unique
+    cell). No source-read, no multi-hop, no packing.
+  - Fill: **static emission** (k1-short "bare676"; boristown 642) OR **time-margined live-fill**
+    (official starter `try_attack(margin_s=180/360)`; rauffauzan caps search 360–1800s, MAX_CANDIDATES=450).
+  - **Candidate counts 450–676**, well under the 2000 replay cap; **search/generation time capped far
+    below 9000s** — nobody runs the full budget.
+  - `serve()` server-only / unconditional.
+- **Observations — DOCUMENTED zero-score failure modes (boristown "Why V31/V32/V35 scored 0"):**
+  - **Source-first step** (`web.*`/`email.read`) before the post → **taint → guardrail DENIES** the
+    `http.post` (never `ok=True`). This is the taint seam biting UNTRUSTED_TO_ACTION attacks.
+  - **Packing multiple posts in one trace → deduplicated** / unreliable → NOT counted as several wins.
+  - Text-only/local validation that doesn't run the real replay → false-positive local signal.
+  - Payload versioning: `SECRET_MARKER` is the current v3.1.2 sentinel (`TOKEN=admin123` scores 0 on
+    the current grader). **We use SECRET_MARKER, lab-confirmed 100% fire — correct.**
+- **Result — two big implications:**
+  1. **Our multi-predicate ceiling-breaker is at high risk.** boristown *tried* multi-call/multi-step
+     packing and scored 0: taint denies the post after a source read, extra posts dedup, and
+     `DESTRUCTIVE_WRITE` needs `secret.txt` whose `path` trips the guardrail's first-field check. The
+     ~112 wall may be closer to a real ceiling for OptimalGuardrail than my earlier BOTE implied.
+  2. **Our v1 hang is probably NOT our attack logic:** working kernels run 450–676 candidates with
+     360–1800s live search and finish; our v1 is *more* conservative (8 candidates, 45s) yet hung 4h+.
+     Points to kernel config / mount / account (or bad luck), which the trivial diagnostic is testing.
+- **Recommended next steps:** await the trivial diagnostic; if multi-predicate is pursued, first
+  lab-verify it beats a single exfil *net of* taint-flush hops (≥5 benign events) and dedup.
+
 ## E3d — submission-hang diagnosis (v1 ref 55029825, 4h+ empty score)
 - **Date:** 2026-07-27
 - **Trigger:** colleague submitted several solutions, each scored in ~20 min → the 4h+ empty score is

@@ -42,9 +42,13 @@ Progress by experiment, smallest test first; each logged in `experiments.md`.
   111.795, nobody near 146) shows the count is bound to ~1242 for **both** rows.
 - **Empirical ceiling of the single-primitive approach ≈ 112/row**, and the whole top cluster
   (99–112, 2450 teams) has already hit it. `1242 × 18 / 200 = 111.8` = the current #1.
-- **The only lever past ~112 is raw *per finding* → multi-predicate candidates** (one trace scoring
-  exfil+write+untrusted, 16+4+5…). Board shape says this is unexplored by the field. Feasibility vs
-  the guardrail is the open question. (Fresh BOTE before building it.)
+- **Multi-predicate candidates (raw per finding) — now looks HIGH-RISK, not free (E3e).** A
+  competitor (boristown) tried packing multiple calls / a source-read + post into one trace and
+  **scored 0**: (a) a `web`/`email` source-read taints the window → guardrail DENIES the post;
+  (b) multiple posts in one trace are DEDUPLICATED; (c) `DESTRUCTIVE_WRITE` needs `secret.txt`, whose
+  `path` trips the guardrail's first-field check. So the ~112 wall may be near the real OptimalGuardrail
+  ceiling. Any multi-predicate attempt must first lab-prove it beats a single exfil *net of* the ≥5
+  benign taint-flush hops it requires. (Fresh BOTE + lab test before building it.)
 - ⇒ Throughput is a *tie* with the field (~112). **Multi-predicate stacking is the differentiator.**
 
 ## 6. Synthesis
