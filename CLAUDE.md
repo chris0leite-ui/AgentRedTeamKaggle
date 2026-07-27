@@ -41,5 +41,6 @@ The operating manual. Kept deliberately short; details live in the files it poin
 - `docs/competition/reference.md` — competition-specific facts (contract, scoring, guardrail).
 - `docs/competition/problem.md` — 7-step problem framing, BOTE calcs, option comparisons.
 - `docs/competition/iteration.md` — the edit→gate→measure→submit loop; the `lab/` notebook.
+- `docs/competition/plan-offline-scorer.md` — planned offline public scorer + submission-safety fix.
 - `docs/competition/experiments.md` — dated, append-only log.
 - `docs/competition/todo.md` — backlog / in-flight / done.

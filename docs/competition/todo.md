@@ -3,6 +3,13 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
+- [ ] **Diagnose the submission hang (v1 ref 55029825, 4h+ empty score — it's on OUR side).**
+  Decisive experiment (needs go-ahead): submit a trivial STATIC probe (`[]` or tiny fixed list, no
+  live probing). Fast finalize ⇒ our live-probing/generation model-interaction is the culprit; also
+  hangs ⇒ kernel config/mount/account. (See `experiments.md` E3d.)
+- [ ] **Build the offline public scorer** (fresh session) per `plan-offline-scorer.md` — certifies
+  replay-safe N per model + predicts public score offline (no submission). Do this before any
+  non-SMOKE submission.
 - [ ] **FIX replay-safe sizing in `run()` (blocker for any SMOKE-off submit):** current code sizes to
   the *generation* budget (probe ~5.4s), but *replay* costs ~7.2s → SMOKE-off would over-return for
   gpt_oss and **time out replay → INVALID_SUBMISSION (0)**. Size to the **replay** budget (est. replay

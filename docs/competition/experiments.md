@@ -5,6 +5,34 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3d — submission-hang diagnosis (v1 ref 55029825, 4h+ empty score)
+- **Date:** 2026-07-27
+- **Trigger:** colleague submitted several solutions, each scored in ~20 min → the 4h+ empty score is
+  **our side**, not the platform queue. (My earlier "queue" read was wrong.)
+- **Observations:**
+  - georgymamarin starter (cell 31): a submission has **6 independent 9000s budgets** (each model ×
+    {generate, public-replay, private-replay}); **"any one box runs long → evaluation stops, score
+    column stays empty."** ⇒ empty-score-forever = a phase overran its budget, not a queue.
+  - Pulled the *submitted* v1: it **is** correctly SMOKE-capped (`SMOKE_MODE=True`, 8 findings, 45s,
+    4 hops); serve cell matches the proven-fast pilkwang kernel. So a replay overrun from too-many
+    candidates is **not** v1's cause.
+  - By analysis v1 should finish in ~15–20 min (6 phases × model reload: gpt_oss ~57s, gemma ~187s +
+    trivial 8-candidate work) — matching the colleague. **So v1's 4h+ is anomalous and NOT explained
+    by our SMOKE code.** Root cause is not determinable from here (rerun logs aren't retrievable
+    until it finalizes).
+  - Concrete divergences from the fast kernels: (1) we **probe live** (`env.interact`) in generation —
+    fast static kernels emit candidates with **zero** generation model calls; (2) our sizing targets
+    the **generation** budget → guaranteed replay overrun (empty score) once SMOKE is off (E3c).
+- **Result:** v1 root cause inconclusive; but two real submission-safety defects identified (live
+  probing in generation; generation-budget sizing). Neither is exercised by the tiny SMOKE v1, so the
+  4h hang may be a config/mount/account issue we can't see.
+- **Recommended next steps:**
+  - **Decisive experiment (needs go-ahead):** submit a trivial STATIC probe (tiny fixed list or `[]`,
+    zero live probing). Finalizes fast ⇒ culprit is our live-probing/model-interaction; also hangs ⇒
+    kernel config/mount/account issue.
+  - Build the offline scorer (`plan-offline-scorer.md`) to certify replay-safe N before resubmitting.
+  - Fix `run()` sizing (replay budget, cap 2000) and prefer blind emission.
+
 ## E3c — gateway source read (why the field is walled, and where the edge is)
 - **Date:** 2026-07-27
 - **Trigger:** E3b — is the ~112 wall a hard cap, or replay-time? And is gemma's speed recoverable?
