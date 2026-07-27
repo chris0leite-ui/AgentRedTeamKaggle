@@ -5,6 +5,26 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3m — v2 SUBMITTED (ref 55038685) — first real scoring run
+- **Date:** 2026-07-27 21:52
+- **What:** Submitted v2 (kernel `attack-single-post-exfil-v2` v1). SMOKE off; untimed warm-up;
+  slowest-cost tail guard (×2.0) for gpt_oss CoT spikes; adaptive validation-fill to
+  `_BUDGET_FILL_FRAC=0.90`. Pre-submission gate GREEN; kernel self-test printed `SELF-TEST OK`
+  (mount imports, run()+replay clean, findings=0 vs the deterministic scaffold as expected).
+- **Prediction (to be checked against the real score):**
+  - Offline (E3l): gpt_oss row 129.3 (replay 5.64s/cand), gemma row 180 (2000-cap) → **mean ≈ 155**.
+  - Overhead-adjusted floor: if real gpt_oss ≈ 24s/cand (pilkwang CoT), gpt_oss N≈345, row ~31 →
+    **mean ≈ 105**. So expected band **~105–155**; current LB top is 111.8.
+  - Adaptive live sizing means it should NOT error/zero a row (self-corrects to real cost).
+- **What this one submission resolves:**
+  1. The **gateway-overhead factor** (does our gpt_oss replay stay ~5.6s or balloon toward 24s?).
+  2. Whether **100% fire-rate holds at scale** (N~1000s vs the N=24/N=5 we've seen).
+  3. Cross-check the **mean** aggregation (E3k) against a real asymmetric-ish result.
+- **Status:** PENDING. Queue was ~5h for v1 — expect a wait; the submission itself is fast.
+- **Recommended next steps:** poll to terminal; log the per-row breakdown (need the kernel rerun
+  log or the leaderboard delta) and the achieved mean; compare to the ~105–155 band to pin the
+  overhead factor; then decide whether to spend a 2nd submission on a CoT-suppressing gpt_oss prompt.
+
 ## E3l — full offline scorer: both models 100% fire; projected public mean ≈ 155 (with the overhead caveat)
 - **Date:** 2026-07-27
 - **What:** `lab_score/` (`attack-offline-scorer`), both models, SCORE_N=24. Completed ~11.5 min.
