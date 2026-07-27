@@ -13,6 +13,8 @@ The operating manual. Kept deliberately short; details live in the files it poin
   to another branch without permission.
 - **No outward actions without an explicit go-ahead in that turn.** Do not submit to Kaggle, open a
   PR, or otherwise publish unless I say so.
+- **Ask in plain text — never the Q&A / AskUserQuestion tool.** When you need input, ask directly
+  in prose.
 - **Log every experiment.** After any submission or notable run, append an entry to
   `docs/competition/experiments.md` (observations, not conclusions; + next steps) and reconcile
   `docs/competition/todo.md`.
@@ -27,6 +29,10 @@ The operating manual. Kept deliberately short; details live in the files it poin
 - **Options before solutions.** Enumerate ≥2 approaches and compare briefly before committing; then
   progress by experiment — the smallest test that moves the estimate.
 - **Observations, not conclusions.** Record what happened; defer conclusions until the evidence forces them.
+- **The problem framing is a draft, always.** `problem.md` is never final — we reframe as we learn,
+  and we re-run the whole 7-step loop on sub-problems as they surface. Expect to revisit and rewrite
+  it; that's the method working, not a failure.
+- **Teach as we go.** Explain what I'm doing in simple, concise terms so the user learns from it.
 
 ## Where things live
 - `docs/knowledge-base.md` — transferable AI-agent-security knowledge (survives the competition).
