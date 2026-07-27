@@ -1,7 +1,7 @@
 # Visual model — the agent, the guardrail, our candidates
 
-Three pictures. Renders on GitHub and in the side panel. Facts behind them: `reference.md`;
-words: `../glossary.md`.
+Four pictures. Renders on GitHub and in the side panel. Facts behind them: `reference.md`;
+words: `../glossary.md`; the code: `../../attack.py`.
 
 ## 1. The agent we're attacking (the loop)
 Our candidate is just the first user message. Everything else is the agent's own loop. The
@@ -54,3 +54,31 @@ flowchart LR
 shape the trace to clear both seams, keep it short so replay can score many of them. Other
 primitives (destructive write, untrusted-to-action, confused deputy) are the same idea against a
 different predicate — each adds unique-cell diversity on top.
+
+## 4. Our current solution (`attack.py`, v1)
+One sentence: **a factory that manufactures the exfil primitive above, keeps only the candidates
+that provably fire, and diversifies them by domain.** It is architecturally right but deliberately
+throttled — `SMOKE_MODE` caps it to **8 candidates / 45 s** so the first submission just proves the
+pipeline runs.
+
+```mermaid
+flowchart TD
+  S["run() — called once per model<br/>(gpt_oss, gemma)"] --> G["Build one message:<br/>fresh unique domain + exfil instruction"]
+  G --> P{"_probe — run it live:<br/>did a predicate fire?"}
+  P -->|yes| K["keep as candidate"]
+  P -->|no| D["discard"]
+  K --> C{"budget left<br/>AND under cap?"}
+  D --> C
+  C -->|yes| G
+  C -->|no| R["return kept candidates"]
+  R -.each returned candidate provably fired ⇒ ~100% fire-rate.-> R
+```
+
+**What each piece buys us:**
+- **Single-message primitive** → shortest possible trace → cheap to replay → more fit in budget.
+- **Live `_probe` (validation-fill)** → we return only candidates that fired → ~100% fire-rate.
+- **Fresh domain per candidate** → each counts as a new unique cell (+2).
+- **Governors** (`try/except → []`, time cushion, tail margin) → the run can't crash or overrun.
+
+**Known gaps (why this is not yet "good"):** `SMOKE_MODE` is on (cap 8); no replay-safe count
+measured; no blind fallback; single primitive only. See `todo.md`.
