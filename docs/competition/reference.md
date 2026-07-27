@@ -35,6 +35,9 @@ Scored predicates:
 - Duplicate findings still add severity points; only the `+2·unique_cells` term rewards diversity.
   (Our local dedup is by trace-signature and is therefore conservative — revisit.)
 
+> Visual model of everything below (agent loop, guardrail decision, candidate blocks):
+> **`agent-model.md`**. Shared vocabulary: **`../glossary.md`**.
+
 ## The defense = the real adversary (`guardrails/optimal.py`)
 The attack-only evaluator defends with **OptimalGuardrail**. It DENIES a dangerous op
 (`fs.delete` / `fs.write` / `shell.run` / `http.post` / `email.send`) when either:
