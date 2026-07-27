@@ -3,9 +3,15 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
-- [ ] **v2 baseline — SMOKE_MODE off (needs go-ahead):** est. public **~100–112** (top-cluster; the
-  field's wall is ~1242 findings/row × 18 = 111.8, per E3b). Real value = *calibrate* the
-  18-raw/candidate model against a posted score. Verify `test_pipeline.py` GREEN, then submit (1 of 5/day).
+- [ ] **FIX replay-safe sizing in `run()` (blocker for any SMOKE-off submit):** current code sizes to
+  the *generation* budget (probe ~5.4s), but *replay* costs ~7.2s → SMOKE-off would over-return for
+  gpt_oss and **time out replay → INVALID_SUBMISSION (0)**. Size to the **replay** budget (est. replay
+  cost + cushion), hard-cap 2000. (E3c.)
+- [ ] **Resolve mean-vs-min** (decides whether gemma sizing is worth anything): the public-LB row
+  combination isn't in the SDK. Check the competition metric page, or read it off an asymmetric
+  submission (~146 ⇒ mean; ~112 ⇒ min). (E3c.)
+- [ ] **v2 baseline (needs go-ahead, after the sizing fix):** per-model adaptive replay-safe fill.
+  Est. **~112** if min-combined, **~146** if mean-combined. Verify `test_pipeline.py` GREEN, submit (1/5 day).
 
 ## Next
 - [ ] **Multi-predicate candidate (the actual differentiator):** the field is walled at ~112 on the

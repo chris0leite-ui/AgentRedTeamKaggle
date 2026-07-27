@@ -5,6 +5,33 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3c — gateway source read (why the field is walled, and where the edge is)
+- **Date:** 2026-07-27
+- **Trigger:** E3b — is the ~112 wall a hard cap, or replay-time? And is gemma's speed recoverable?
+- **Observations (`jed_attack_gateway.py`, `evaluation/ops.py`, `scoring.py`):**
+  - **`MAX_REPLAY_FINDINGS = 2000`** — the wall at ~1242 is **not** the cap. It's the replay-safe
+    count for the slow model: `9000s / 1242 ≈ 7.2s`/candidate replay cost for gpt_oss.
+  - **Generation AND replay are per-model** (loop over `[gpt_oss, gemma]`, each own 9000s budgets).
+    ⇒ our `run()` returns a **separate list per model** → gemma's headroom is real *in principle*.
+  - **`run()` is NOT told the model** (init passes only budget+seed) ⇒ per-model sizing must be
+    **adaptive** (measure per-candidate cost live; gemma ~3× faster → naturally fill more).
+  - **Replay timeout ⇒ `INVALID_SUBMISSION`** (whole run errors, no partial credit).
+  - Scoring exact: `raw = Σ sev + 2·|unique cells|`; predicates are **plural per finding** →
+    multi-predicate stacking is scored. `1242×18/200 = 111.8` = current #1 ⇒ field = our exact primitive.
+- **Result — two findings:**
+  1. **Latent bug in our `run()`:** it sizes the fill to the *generation* budget (probe ≈5.4s), but
+     *replay* costs ~7.2s. So SMOKE-off would return ~1533 for gpt_oss → replay ≈ 11000s > 9000 →
+     **INVALID_SUBMISSION (0)**. Must size to the **replay** budget (est. replay cost + cushion),
+     hard-cap 2000. **"Flip SMOKE off" is NOT safe as-is.**
+  2. **Potential edge:** per-model adaptive replay-safe sizing returns ~1200 (gpt_oss) but up to 2000
+     (gemma). **IF** the public LB is a mean/sum → public ≈ (112+180)/2 ≈ **146**, beating the field.
+     **IF it's a min → worthless** (only gpt_oss counts). The combination rule is Kaggle-side, unknown.
+- **Recommended next steps:**
+  - **Resolve mean-vs-min** before betting on gemma sizing: competition metric page, or read it off an
+    asymmetric submission's public score (~146 ⇒ mean; ~112 ⇒ min).
+  - v2 must fix the replay-safe sizing (size to replay, not generation) regardless of the above.
+  - Lab-test multi-predicate feasibility (one trace scoring exfil+write+untrusted past the guardrail).
+
 ## E3b — leaderboard calibration (reality check on the E3 estimate)
 - **Date:** 2026-07-27
 - **Trigger:** E3 projected v2 public ≈ 157, which would top the board — so we checked the board.
