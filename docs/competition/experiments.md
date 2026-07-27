@@ -5,6 +5,30 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3i — trivial diagnostic scored 0.450 → blind/static emission WORKS (corrects E3g arithmetic)
+- **Date:** 2026-07-27
+- **Observations:**
+  - Trivial diagnostic (ref 55034976) **COMPLETE at publicScore = 0.450**. It returns **5 static
+    candidates with NO live probing** — just `AttackCandidate.from_messages([exfil_msg(unique_domain)])`.
+  - **This corrects my E3g prediction of "0.045" — that was a 10× arithmetic slip.** The right number
+    is `5 candidates × 0.09/candidate = 0.45`. (`18 raw/cand ÷ 200000 × 1000 = 0.09`.) So 0.450 is a
+    clean second anchor and **re-confirms 0.09/candidate exactly**.
+- **Result — three things this proves:**
+  1. **Blind/static emission scores fully.** All 5 static candidates fired on replay against BOTH
+     real models with zero generation-time probing. We do NOT need live validation-fill.
+  2. **Static beats live-fill under time pressure.** v1 (live-probing, SMOKE 45s) emitted only **1**
+     candidate → 0.090, because live probing pays the ~57s/187s model-load wall *inside* the
+     generation deadline. Static emits instantly → all N survive to replay → N×0.09.
+  3. **The real ceiling is the REPLAY budget, and it explains the leaderboard wall.** Max scorable N
+     = `9000s ÷ replay_s/cand`. At ~7.2s that's ≈ **1250 candidates ≈ 112 normalized** — exactly the
+     observed top (1242 → 111.795). The 2000-cap (→180) is NOT the binding constraint; replay time is.
+- **Recommended next steps:**
+  - **Pivot v2 to blind/static emission** (plan option (a)): emit N unique-domain exfil candidates with
+    no probing, N sized to the replay budget from the offline scorer's measured `replay_s/cand`.
+    This sidesteps the model-load truncation entirely and matches the fast kernels.
+  - Use the offline scorer (E3h) to pin the exact `replay_s/cand` → safe N (~1200), then one
+    asymmetric real submission for the gateway-overhead factor + mean-vs-min.
+
 ## E3h — built the offline public scorer (notebook ready, not yet run)
 - **Date:** 2026-07-27
 - **What:** Added a `--score` mode to `make_lab_notebook.py` → `lab_score/` (+ `--score --smoke`
@@ -48,8 +72,9 @@ steps**. One entry per submission or notable local run.
      truncates the fill. Need an **untimed warm-up** (do the first load/probe outside the deadline),
      matching the official starter's `margin_s` pattern.
 - **Recommended next steps:**
-  - Await the trivial (ref 55034976) score — expect **0.045** (5 static candidates: `5·18/200=0.045`)
-    if it too completes; that would further confirm the linear model AND that static emission scores.
+  - Await the trivial (ref 55034976) score — expect ~0.45 (5 static candidates × 0.09). **[RESOLVED
+    in E3i: scored 0.450. NOTE my inline "0.045" here was a 10× slip; correct value 0.45.]** Confirms
+    the linear model AND that static emission scores fully.
   - The real lever on turnaround is queue, not our code — plan submissions expecting multi-hour reruns.
   - Fold "untimed warm-up before the fill deadline" into the v2 sizing fix.
 

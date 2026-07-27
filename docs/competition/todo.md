@@ -18,8 +18,11 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
 - [ ] **Resolve mean-vs-min** (decides whether gemma sizing is worth anything): the public-LB row
   combination isn't in the SDK. Check the competition metric page, or read it off an asymmetric
   submission (~146 ⇒ mean; ~112 ⇒ min). (E3c.)
-- [ ] **v2 baseline (needs go-ahead, after the sizing fix):** per-model adaptive replay-safe fill.
-  Est. **~112** if min-combined, **~146** if mean-combined. Verify `test_pipeline.py` GREEN, submit (1/5 day).
+- [ ] **v2 baseline — PIVOT to blind/static emission (E3i, needs go-ahead after scorer run):** emit N
+  unique-domain exfil candidates with NO live probing (proven by trivial ref 55034976 → 0.450 = all 5
+  static fired). Sidesteps the model-load truncation that capped v1 at 1 candidate. Size N to the
+  REPLAY budget from the offline scorer's measured `replay_s/cand` (~1200 ⇒ ~112). Verify
+  `test_pipeline.py` GREEN, submit (1/5 day).
 
 ## Next
 - [ ] **Multi-predicate candidate (the actual differentiator):** the field is walled at ~112 on the
