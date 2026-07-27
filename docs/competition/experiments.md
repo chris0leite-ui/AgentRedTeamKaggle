@@ -5,6 +5,34 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3 — full lab: real-model fire-rate + latency (both models, N=20)
+- **Date:** 2026-07-27
+- **Hypothesis:** with the lab path validated (E2), measure gpt_oss **and** gemma at N=20 to get a
+  trustworthy fire-rate and the per-model replay-safe candidate count that sizes the real submission.
+- **Setup:** `lab/` (20 trials × both models, max_hops=4), plain notebook commit
+  (`chrisleitescha/attack-lab-fire-rate`), internet ON, T4. `n_gpu_layers=-1` fit both (no OOM retry).
+- **Observations:**
+
+  | model | fire-rate | mean s/candidate | replay-safe ≈ 0.9·9000/lat | load |
+  |---|---|---|---|---|
+  | gpt_oss | **100% (20/20)** | 5.4s | **1496** (< 2000 cap → replay-bound) | 57s |
+  | gemma | **100% (20/20)** | 1.6s | 4951 → **2000** (cap-bound) | 187s |
+
+  - Both models obey the primitive every time (40/40 total). First solid fire-rate evidence.
+  - **gemma is faster per candidate than gpt_oss** (1.6 vs 5.4s) — it's an A4B MoE (~4B active); my
+    prior guess that the bigger model would bind sizing was wrong. **gpt_oss is the binding
+    constraint** at ~1496.
+  - One gpt_oss latency outlier (20.3s at #10); mean absorbs it but the tail is real → keep the
+    tail-margin governor.
+- **Result:** primitive fires 100% on both real models; sizing numbers in hand.
+- **Recommended next steps (sizing BOTE in `problem.md` §5):**
+  - **v2 = SMOKE_MODE off.** Our adaptive validation-fill self-sizes to each model's budget →
+    ~1500 (gpt_oss) / 2000-cap (gemma). Est. public ≈ **mean(134, 180) ≈ 157** normalized (vs current
+    smoke ~0.7). Needs a go-ahead (spends 1 of 5/day).
+  - **Ceiling of this single-primitive approach ≈ 180/row** (2000 findings × 18 raw / 200). To beat
+    180 you must raise raw *per finding* → **multi-predicate candidates** (E-next), not more candidates.
+  - gpt_oss 157→180 lever = cut its latency below ~4.05s (then it also hits the 2000 cap).
+
 ## E2 — lab smoke: real-model fire-rate + latency (gpt_oss only)
 - **Date:** 2026-07-27
 - **Hypothesis:** the `lab/` path can load the *real* leaderboard model (GGUF via llama.cpp) on a T4
