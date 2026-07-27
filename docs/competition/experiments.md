@@ -5,6 +5,40 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3l — full offline scorer: both models 100% fire; projected public mean ≈ 155 (with the overhead caveat)
+- **Date:** 2026-07-27
+- **What:** `lab_score/` (`attack-offline-scorer`), both models, SCORE_N=24. Completed ~11.5 min.
+- **Observations:**
+  | model | load | gen s/cand | replay s/cand | fire | replay-safe N | proj row |
+  |---|---|---|---|---|---|---|
+  | gpt_oss | 58s | 5.44 | **5.64** | 100% (24/24) | 1437 | 129.33 |
+  | gemma | 145s | 1.76 | **1.80** | 100% (24/24) | **2000 (cap)** | **180.00** |
+  - **Projected public: mean = 154.67, min = 129.33.** (It's the mean — E3k — so **154.67**.)
+  - **gemma is the workhorse:** 1.8s/cand, dead-stable → hits the 2000-cap → row 180 (the max a
+    single-exfil primitive can score on one row). gpt_oss is the binding row.
+  - **gpt_oss CoT shows up as a tail, not the mean:** 23 of 24 replays were ~3–7s; **candidate #10
+    was 21.4s** — a chain-of-thought turn (the E3k effect). Mean 5.64s incl. it, ~4.97s without.
+  - **gen cost ≈ replay cost on both models** (5.44≈5.64, 1.76≈1.80). Important safety property:
+    our `run()` measures per-candidate cost LIVE during generation, so its adaptive fill self-sizes
+    to the REAL cost in the gateway — it **cannot catastrophically overrun replay** even if we're
+    wrong about the overhead factor (it would just emit fewer candidates).
+- **The overhead caveat (still unresolved, needs 1 real submission):**
+  - Offline projects mean ~155, but the **LB top is 111.8**. Reconciles two ways: (a) our prompt is
+    genuinely fast (gpt_oss ~5.6s) → real ~155 → we'd lead by a lot; or (b) the real gateway gpt_oss
+    is ~24s/cand (pilkwang's number, CoT) → gpt_oss N≈375, row ~34 → mean (34+180)/2 ≈ **107**.
+  - So the honest projected range is **~107–155**. Both are at/above the current top. The single
+    asymmetric real submission that calibrates the overhead factor also tells us which end we're at.
+- **Fire-rate at scale:** 100% at N=24 on both (48/48), plus the trivial's 5/5 in the REAL grader
+  (E3i) → our prompt looks materially more reliable than pilkwang's ~31%. Still unproven at N~1500.
+- **Recommended next steps:**
+  1. **Fix `run()` for a safe non-SMOKE submit:** untimed warm-up (load outside the timed loop),
+     adaptive per-model fill sized to the REPLAY budget with a conservative TAIL cushion (for the
+     21s CoT spikes), hard-cap 2000. Keep validation-fill (guarantees 100% fire; gen≈replay so it's
+     nearly free and self-sizing) rather than blind-static (risk if fire<100% at scale).
+  2. Verify `test_pipeline.py` GREEN, then (needs go-ahead) submit — sized adaptively, expecting a
+     ~107–155 public score. This one submission resolves the overhead factor.
+  3. Optional lab experiment: a CoT-suppressing gpt_oss prompt variant to shrink the 21s tail.
+
 ## E3k — competitor-doc research: aggregation = MEAN (confirmed); gpt_oss CoT is the hidden slow lever
 - **Date:** 2026-07-27
 - **Method:** Public API (Bearer token) works for kernels + leaderboard; the `/api/i/` internal
