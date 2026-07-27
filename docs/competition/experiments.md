@@ -5,6 +5,35 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E2 — lab smoke: real-model fire-rate + latency (gpt_oss only)
+- **Date:** 2026-07-27
+- **Hypothesis:** the `lab/` path can load the *real* leaderboard model (GGUF via llama.cpp) on a T4
+  and measure our primitive's fire-rate + latency — offline-measurable throughput without spending a
+  submission.
+- **Setup:** `lab_smoke/` (gpt_oss only, N_TRIALS=2, max_hops=4), plain notebook commit
+  (`chrisleitescha/attack-lab-smoke`), internet ON (weights fetch), GPU T4. First push ERRORED in 9s.
+- **Observations:**
+  - **Bug found & fixed:** the generator embedded `attack.py` in a raw *triple-double-quoted* string;
+    `attack.py`'s own `"""` docstring closed it early → `SyntaxError`. Fixed by embedding via
+    triple-*single*-quote concatenation (as `make_notebook.py` does) + an AST-compile check on every
+    cell before push. Same latent bug existed in the full `lab/` — fixed there too.
+  - Kaggle derives the kernel **slug from the title**, not the metadata `id`; gave both labs
+    slug-clean titles so the URL is predictable.
+  - Re-run COMPLETE in ~3 min. `llama-cpp-python` installed from the **cu124** prebuilt wheel;
+    `llama_cpp 0.3.34`. `gpt-oss-20b-Q4_K_M.gguf` loaded with `n_gpu_layers=-1` on the T4 in **54s**
+    (download + load together — HF path is fast).
+  - **fire-rate = 100% (2/2)** on the real gpt_oss; **mean 5.3s/candidate**; implied replay-safe
+    count ≈ **1523** (0.9·9000/5.3), which is under the 2000-findings cap.
+- **Result:** the lab mechanism works end-to-end on the real model; our primitive fires on gpt_oss
+  (first evidence beyond the obedient mock).
+- **Recommended next steps:**
+  - Run the **full** `lab/` (20 trials × both models) — need gemma's fire-rate + latency; gemma is
+    bigger, so its replay-safe count (and any fire-rate gap) will govern sizing. N=2 is too small to
+    trust 100% yet.
+  - **De-prioritise the GGUF-weights dataset:** load was 54s, so mounting weights saves ~1 min, not
+    ~10 — BOTE no longer justifies a 27 GB upload for an internet-on lab.
+  - If gpt_oss ends up latency-bound below the cap, the lever is a terser prompt / fewer hops.
+
 ## E1 — pipeline smoke test (single-post exfil v1)
 - **Date:** 2026-07-27
 - **Hypothesis:** the full pipeline (generate → push kernel → scored re-run → submit) runs
