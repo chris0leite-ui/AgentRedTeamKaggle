@@ -1,0 +1,34 @@
+[{"stream_name":"stderr","time":6.915735887,"data":"/usr/local/lib/python3.12/dist-packages/nbformat/__init__.py:96: MissingIDFieldWarning: Cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.\n"}
+,{"stream_name":"stderr","time":6.915814409,"data":"  validate(nb)\n"}
+,{"stream_name":"stderr","time":7.824481913,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":7.824542028,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":7.824546176,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":7.824561065,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":8.457189174,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":8.457222818,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":8.457226785,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":8.457230093,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":9.811760049,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":9.811785229,"data":"  File \"\u003cstring\u003e\", line 1, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":9.811790339,"data":"  File \"/usr/local/lib/python3.12/dist-packages/papermill/execute.py\", line 131, in execute_notebook\n"}
+,{"stream_name":"stderr","time":9.811903489,"data":"    raise_for_execution_errors(nb, output_path)\n"}
+,{"stream_name":"stderr","time":9.811945881,"data":"  File \"/usr/local/lib/python3.12/dist-packages/papermill/execute.py\", line 251, in raise_for_execution_errors\n"}
+,{"stream_name":"stderr","time":9.812129844,"data":"    raise error\n"}
+,{"stream_name":"stderr","time":9.812147769,"data":"papermill.exceptions.PapermillExecutionError: \n"}
+,{"stream_name":"stderr","time":9.812152144,"data":"---------------------------------------------------------------------------\n"}
+,{"stream_name":"stderr","time":9.812155699,"data":"Exception encountered at \"In [1]\":\n"}
+,{"stream_name":"stderr","time":9.812159351,"data":"  File \"/tmp/ipykernel_24/4136990850.py\", line 20\n"}
+,{"stream_name":"stderr","time":9.812162944,"data":"    ONCE PER MODEL (gpt_oss, gemma) against that model's live env with a large per-model\n"}
+,{"stream_name":"stderr","time":9.812166566,"data":"                                                      ^\n"}
+,{"stream_name":"stderr","time":9.812169897,"data":"SyntaxError: unterminated string literal (detected at line 20)\n"}
+,{"stream_name":"stderr","time":9.812173268,"data":"\n"}
+,{"stream_name":"stderr","time":9.812176849,"data":"\n"}
+,{"stream_name":"stderr","time":12.108237619,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":12.108268776,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":12.269858684,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":12.269891086,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":13.019216718,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":13.323467613,"data":"[NbConvertApp] Writing 20901 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":15.84883689,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":16.707530989,"data":"[NbConvertApp] Writing 330518 bytes to __results__.html\n"}
+]

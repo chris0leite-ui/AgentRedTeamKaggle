@@ -13,15 +13,26 @@ Produces lab/lab.ipynb + lab/kernel-metadata.json.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
+# --smoke: a fast end-to-end check on Kaggle — ONE model (gpt_oss, fits the T4 cleanly), 2 probes.
+# Proves mount + llama.cpp install + real GGUF load + probe all work before the full measurement.
+SMOKE = "--smoke" in sys.argv
+
 ROOT = Path(__file__).resolve().parent
-OUT = ROOT / "lab"
+OUT = ROOT / ("lab_smoke" if SMOKE else "lab")
 OUT.mkdir(exist_ok=True)
 
 KAGGLE_USERNAME = "chrisleitescha"
 COMP = "ai-agent-security-multi-step-tool-attacks"
-SLUG = "attack-lab-fire-rate"
+SLUG = "attack-lab-smoke" if SMOKE else "attack-lab-fire-rate"
+# Kaggle derives the kernel slug from the TITLE (not the id), so keep the title slug-clean and
+# matching SLUG to avoid a surprising URL.
+TITLE = "Attack lab smoke" if SMOKE else "Attack lab fire rate"
+
+N_TRIALS = 2 if SMOKE else 20
+RUN_GEMMA = not SMOKE
 
 attack_src = (ROOT / "attack.py").read_text()
 
@@ -43,8 +54,8 @@ primitive on a T4. Reports fire-rate and seconds/candidate → the replay-safe c
 **Not a submission — spends nothing.** Internet is ON only to fetch the GGUF weights.
 '''
 
-setup = f'''\
-# 1) Mount the competition SDK + gateway, and drop in our version-controlled attack.py.
+setup = '''\
+# 1) Mount the competition SDK + gateway.
 import glob, os, sys, time
 from pathlib import Path
 sys.argv = [sys.argv[0]]  # the SDK parses argv on import
@@ -60,9 +71,6 @@ for p in _prefer_real(glob.glob("/kaggle/input/**/aicomp_sdk", recursive=True)) 
         sys.path.insert(0, parent)
 
 Path("/kaggle/working").mkdir(parents=True, exist_ok=True)
-ATTACK_SRC = r"""{attack_src}"""
-with open("/kaggle/working/attack.py", "w") as f:
-    f.write(ATTACK_SRC)
 sys.path.insert(0, "/kaggle/working")
 
 import aicomp_sdk  # noqa: F401
@@ -71,6 +79,18 @@ _fx = glob.glob("/kaggle/input/**/aicomp_sdk/fixtures/web_corpus.json", recursiv
 FIXTURES = Path(_fx[0]).parent if _fx else None
 print("fixtures:", FIXTURES)
 '''
+
+# Embed attack.py via concatenation with triple-SINGLE quotes (attack.py's docstrings use """,
+# so a raw triple-double-quoted wrapper would terminate early — this is why make_notebook.py does
+# it this way too). attack.py contains no ''' sequence.
+write_attack = (
+    "# 1b) Drop in our version-controlled attack.py (single source of truth for the primitive).\n"
+    "ATTACK_SRC = r'''" + attack_src + "'''\n"
+    "with open('/kaggle/working/attack.py', 'w') as f:\n"
+    "    f.write(ATTACK_SRC)\n"
+    "import py_compile; py_compile.compile('/kaggle/working/attack.py', doraise=True)\n"
+    "print('wrote /kaggle/working/attack.py (%d bytes)' % len(ATTACK_SRC))\n"
+)
 
 ensure_llama = '''\
 # 2) Ensure llama-cpp-python (CUDA) is importable. Prefer a mounted wheel; else pip (internet ON).
@@ -117,8 +137,9 @@ from kaggle_evaluation.jed_attack_134815.gpt_oss_model_server import SPEC as GPT
 from kaggle_evaluation.jed_attack_134815.gemma_model_server import SPEC as GEMMA_SPEC
 from attack import AttackAlgorithm
 
-# --- knobs ---
-N_TRIALS = 20            # candidates probed per model (raise for a tighter fire-rate estimate)
+# --- knobs (set by make_lab_notebook.py) ---
+N_TRIALS = __N_TRIALS__  # candidates probed per model (raise for a tighter fire-rate estimate)
+RUN_GEMMA = __RUN_GEMMA__
 MAX_HOPS = 4             # tool hops per candidate (matches our smoke default)
 REPLAY_BUDGET_S = 9000.0 # gateway per-model replay budget
 FILL = 0.9               # leave a 10% cushion when computing the replay-safe count
@@ -187,7 +208,9 @@ def measure_safe(spec):
         return measure(spec, n_gpu_layers=20)
 
 
-results = [measure_safe(GPT_OSS_SPEC), measure_safe(GEMMA_SPEC)]
+results = [measure_safe(GPT_OSS_SPEC)]
+if RUN_GEMMA:
+    results.append(measure_safe(GEMMA_SPEC))
 print("\\n==================== SUMMARY ====================")
 for r in results:
     print(r)
@@ -195,8 +218,12 @@ print("\\nreplay-safe count = 0.9 * 9000s / mean_s_per_candidate. Use the SMALLE
 print("models' counts (and its fire-rate) to size the real submission.")
 '''
 
+harness = (harness
+           .replace("__N_TRIALS__", str(N_TRIALS))
+           .replace("__RUN_GEMMA__", str(RUN_GEMMA)))
+
 nb = {
-    "cells": [md(intro), code(setup), code(ensure_llama), code(harness)],
+    "cells": [md(intro), code(setup), code(write_attack), code(ensure_llama), code(harness)],
     "metadata": {
         "kernelspec": {"language": "python", "display_name": "Python 3", "name": "python3"},
         "language_info": {"name": "python"},
@@ -207,7 +234,7 @@ nb = {
 
 meta = {
     "id": f"{KAGGLE_USERNAME}/{SLUG}",
-    "title": "Attack lab — fire-rate + latency",
+    "title": TITLE,
     "code_file": "lab.ipynb",
     "language": "python",
     "kernel_type": "notebook",
