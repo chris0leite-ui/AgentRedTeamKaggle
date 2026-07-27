@@ -3,3 +3,4 @@ sdk/
 *.zip
 __pycache__/
 *.pyc
+refs/
