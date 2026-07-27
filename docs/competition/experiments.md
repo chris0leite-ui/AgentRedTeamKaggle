@@ -5,6 +5,32 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3h — built the offline public scorer (notebook ready, not yet run)
+- **Date:** 2026-07-27
+- **What:** Added a `--score` mode to `make_lab_notebook.py` → `lab_score/` (+ `--score --smoke`
+  → `lab_score_smoke/`). It reproduces the **public** rows *exactly* by reusing the gateway's own
+  pieces so nothing can drift: `build_attack_env(env_selection="gym", seed=123, max_tool_hops=8)`,
+  `eval_predicates`, a finding dict with `score_cell_signature = cell_signature(tool_events)`, and
+  `summarize_attack_findings` for the score. Per model it: loads the real GGUF agent, runs the REAL
+  `run()` (monkeypatched `SMOKE_MODE=False`, `MAX_FINDINGS=SCORE_N`) against a gym env for
+  generation, then **times each candidate's replay** → `replay_safe_N = min(2000, 0.9·9000/replay_s)`
+  and a projected row/public score under **both** mean and min.
+- **Observations (build-time only, no run yet):**
+  - Confirmed from source that replay runs in a **GymAttackEnv**, not SandboxEnv (the lab used
+    SandboxEnv) — the scorer matches the gateway by using `build_attack_env(..., "gym")`. gymnasium
+    1.3.0 imports locally; added a defensive pip-ensure in the notebook.
+  - Replay parity nailed to the gateway `_replay_and_score` loop (fresh env/candidate, `reset()`,
+    `interact(msg, hops=8)`, `export_trace_dict`, `eval_predicates`, finding dict, summarize).
+  - `AttackCandidate.user_messages` is a `tuple[str,...]` — replay reads it directly.
+  - All 4 notebook cells AST-parse; smoke + full + plain-lab variants all generate.
+- **Recommended next steps:**
+  - (needs go-ahead) Push **`lab_score_smoke/`** to Kaggle first (gpt_oss only, SCORE_N=3) to prove
+    the gym loop end-to-end, then the full **`lab_score/`**; log the replay-safe N as E3i.
+  - The scorer's numbers then drive the `run()` sizing fix (size to REPLAY budget, cap 2000) before
+    any non-SMOKE submission.
+  - Still needs ONE asymmetric real submission afterwards for the gateway-overhead factor +
+    mean-vs-min (the two things the offline scorer cannot settle).
+
 ## E3g — v1 COMPLETED (0.090) — it was never broken, just slow (corrects E3d/E3f)
 - **Date:** 2026-07-27
 - **Observations:**

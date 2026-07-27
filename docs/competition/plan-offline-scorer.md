@@ -1,8 +1,10 @@
 # Plan — offline public scorer (+ submission-safety fix)
 
-**Status:** planned, NOT built. To be implemented in a fresh post-compaction session. This doc is
-self-contained so it can be picked up cold. Read `reference.md` (gateway mechanics) and
-`experiments.md` E3/E3b/E3c/E3d first.
+**Status:** **BUILT — not yet run on Kaggle** (E3h). Implemented as `make_lab_notebook.py --score`
+→ `lab_score/` (smoke: `--score --smoke` → `lab_score_smoke/`). All cells AST-validated locally.
+Next: push the smoke scorer to Kaggle to prove the gym-env loop, then the full scorer, then read
+the replay-safe N. This doc stays as the design spec. Read `reference.md` (gateway mechanics) and
+`experiments.md` E3/E3b/E3c/E3g first.
 
 ## Why
 1. **Fast feedback without the Kaggle queue.** Reproduce the *public* leaderboard score offline in
