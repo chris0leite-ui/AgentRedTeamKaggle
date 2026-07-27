@@ -35,27 +35,31 @@ Progress by experiment, smallest test first; each logged in `experiments.md`.
   (of 200000 raw → 1000).
 - **Measured (E3):** both models fire **100%**; gpt_oss **5.4s/cand** → replay-safe ~**1496**;
   gemma **1.6s/cand** → replay-safe ~4951, **capped at 2000 findings**.
-- **v2 estimate (SMOKE off, adaptive fill):** gpt_oss ~1496×0.09 ≈ **134**, gemma 2000×0.09 = **180**;
-  public = mean ≈ **157** normalized. (vs current smoke ~0.7.)
-- **Approach ceiling ≈ 180/row** = 2000-findings cap × 18 raw / 200. Two levers, in order:
-  1. **gpt_oss latency** 5.4s→<4.05s ⇒ it also hits the 2000 cap ⇒ both rows 180 ⇒ **~180**.
-  2. **Break the 180 ceiling:** raise raw *per finding* with **multi-predicate candidates**
-     (one trace scoring exfil+write+untrusted, 16+4+5…), not more candidates. This is the only way
-     past 180 once both rows are cap-bound.
-- ⇒ Dominant term shifted: throughput/latency gets us to ~180; **multi-predicate stacking** is the
-  lever beyond. (Fresh BOTE before building the multi-predicate primitive.)
+- **v2 estimate (SMOKE off), corrected by the leaderboard (E3b):** the empirical wall is
+  **~1242 findings/row** (`9000s / 1242 ≈ 7.2s`/candidate — ~1.8s gateway/replay overhead beyond the
+  5.4s lab probe). So v2 ≈ **~100–112 public**, not 157. The lab's 1496/2000 counts ignored overhead
+  and wrongly assumed gemma's fast latency banks 2000 on its row independently — the board (top
+  111.795, nobody near 146) shows the count is bound to ~1242 for **both** rows.
+- **Empirical ceiling of the single-primitive approach ≈ 112/row**, and the whole top cluster
+  (99–112, 2450 teams) has already hit it. `1242 × 18 / 200 = 111.8` = the current #1.
+- **The only lever past ~112 is raw *per finding* → multi-predicate candidates** (one trace scoring
+  exfil+write+untrusted, 16+4+5…). Board shape says this is unexplored by the field. Feasibility vs
+  the guardrail is the open question. (Fresh BOTE before building it.)
+- ⇒ Throughput is a *tie* with the field (~112). **Multi-predicate stacking is the differentiator.**
 
 ## 6. Synthesis
 - The primitive is validated on both real models (100% fire) — **the guardrail bypass is real, not
   hoped-for.** Remaining score is an engineering problem (sizing + latency + predicate stacking), not
   a "does the attack work" problem.
-- Near-term: a single SMOKE-off submission should land ~130–160 public. That is the measured
-  baseline to beat.
+- Near-term: a single SMOKE-off submission should land **~100–112** public (top-cluster) — a *tie*
+  with the field, and the measured anchor for our 18-raw/candidate model.
 - Open unknown: the **private** guardrail (hidden rows). Our bypass targets OptimalGuardrail's two
   seams specifically; a different private policy could close them. Design the next primitive to be
   robust to that where possible.
 
 ## 7. Communicate / decide
-Current decision gate: **ship v2 (SMOKE_MODE off) as the measured baseline** — est. ~157 public,
-low risk (100% fire measured), spends 1 of 5/day. Awaiting go-ahead. After it scores, decide between
-(1) gpt_oss latency reduction toward the 180 ceiling, or (2) a multi-predicate primitive to break it.
+Current decision gate: **ship v2 (SMOKE_MODE off) as the measured baseline** — est. **~100–112**
+public (top-cluster, matches the field), low risk (100% fire measured), spends 1 of 5/day. Its real
+value is *calibrating our per-candidate model*. Awaiting go-ahead. The move that actually *wins* (not
+ties) is a **multi-predicate primitive** to raise raw/finding past the ~112 wall — build only after
+confirming it clears the guardrail.

@@ -3,14 +3,15 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
-- [ ] **v2 baseline — SMOKE_MODE off (needs go-ahead):** adaptive fill self-sizes to ~1496 (gpt_oss)
-  / 2000-cap (gemma). Est. public ≈ **157** normalized. Verify `test_pipeline.py` GREEN, then submit
-  (spends 1 of 5/day). This is the measured baseline to beat. (See `problem.md` §5, `experiments.md` E3.)
+- [ ] **v2 baseline — SMOKE_MODE off (needs go-ahead):** est. public **~100–112** (top-cluster; the
+  field's wall is ~1242 findings/row × 18 = 111.8, per E3b). Real value = *calibrate* the
+  18-raw/candidate model against a posted score. Verify `test_pipeline.py` GREEN, then submit (1 of 5/day).
 
 ## Next
-- [ ] **Beat the baseline** (after v2 scores): either (1) cut gpt_oss latency 5.4→<4.05s so both rows
-  hit the 2000 cap (~180), or (2) a **multi-predicate candidate** (exfil+write+untrusted in one trace)
-  to raise raw/finding past the 180 ceiling. (See `problem.md` §5.)
+- [ ] **Multi-predicate candidate (the actual differentiator):** the field is walled at ~112 on the
+  single 18-raw primitive; the only way past is more raw *per finding* — one trace scoring
+  exfil+write+untrusted (16+4+5…). **First verify feasibility:** does such a trace clear the guardrail
+  without a deny? (Test in `lab/` before any submission.) (See `problem.md` §5, `experiments.md` E3b.)
 - [ ] ~~GGUF weights → private dataset~~ **De-prioritised** (E2): load was 54s incl. download, so a
   27 GB upload saves ~1 min for an internet-on lab. Revisit only if we need internet-off runs.
 - [ ] **Replay-safe sizing:** cap returned candidates to what the replay phase (9000s/model) can

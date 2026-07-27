@@ -5,6 +5,31 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3b — leaderboard calibration (reality check on the E3 estimate)
+- **Date:** 2026-07-27
+- **Trigger:** E3 projected v2 public ≈ 157, which would top the board — so we checked the board.
+- **Observations:**
+  - Our v1 (ref 55029825) **still PENDING** — no self-anchor yet.
+  - Public LB **top = 111.795**; top-15 cluster tightly in **99–112**.
+  - `1242 findings × 18 raw / 200 = 111.8` — the leader's score matches **~1242 findings/row on an
+    18-raw primitive**, i.e. our exact primitive (single exfil + unique cell). The field is on the
+    same attack; nobody is above ~112.
+  - `9000s / 1242 ≈ 7.2s` effective per-candidate vs our lab's 5.4s bare probe → **~1.8s/candidate
+    of gateway/replay overhead we didn't price in.** My E3 count (1496) was too high.
+  - If any team banked gemma's ~2000 independently, mean would be `(112+180)/2 ≈ 146`; none do. So
+    the effective count is bound to ~1242 for **both** rows — the submission is sized to the slower
+    model / a shared budget, **not** per-model independent. (Hypothesis; verify from gateway source.)
+- **Result:** the **realistic ceiling of the single-primitive approach is ~112, not 180** — and the
+  whole top cluster has already hit it. My 157 estimate was over-optimistic (bad overhead + bad
+  per-model-independence assumption).
+- **Recommended next steps:**
+  - v2 (SMOKE off) is still worth it: expected **~100–112** (top-cluster, plausibly #1), and it
+    **calibrates the 18-raw/candidate model against a real score** before we build anything.
+  - The only lever past ~112 is **more raw per finding → multi-predicate candidates.** The board
+    shape says this is unexplored by the field — verify feasibility against the guardrail (does a
+    single trace score exfil+write+untrusted without a deny?).
+  - Confirm from `jed_attack_gateway.py` whether `run()` is called once (shared list) or per-model.
+
 ## E3 — full lab: real-model fire-rate + latency (both models, N=20)
 - **Date:** 2026-07-27
 - **Hypothesis:** with the lab path validated (E2), measure gpt_oss **and** gemma at N=20 to get a
