@@ -5,6 +5,28 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3g — v1 COMPLETED (0.090) — it was never broken, just slow (corrects E3d/E3f)
+- **Date:** 2026-07-27
+- **Observations:**
+  - v1 (ref 55029825) reached **COMPLETE ~5h after submit** with **publicScore = 0.090**. It was NOT
+    stuck/broken — the multi-hour PENDING was **queue / slow rerun**. (The colleague's ~20-min run was
+    a low-queue window.) This **contradicts the E3d/E3f "it's on our side" read** — my earlier pivot
+    under the colleague evidence was wrong; the original queue hypothesis was right.
+  - **0.090 = exactly 1 firing candidate per model** (`1·18/200 = 0.09`, both rows → mean 0.090).
+    Only 1 because SMOKE's 45s deadline is shorter than the first probe's **model load** (~57s gpt_oss
+    / ~187s gemma), so the fill stops after one probe.
+- **Result — three confirmations against the REAL grader:**
+  1. **0.09/candidate arithmetic is correct** (first real anchor).
+  2. Public = **mean/min of the two public rows, NOT sum** (0.09, not 0.18).
+  3. **Model load must be counted in sizing** — a naive per-candidate deadline shorter than the load
+     truncates the fill. Need an **untimed warm-up** (do the first load/probe outside the deadline),
+     matching the official starter's `margin_s` pattern.
+- **Recommended next steps:**
+  - Await the trivial (ref 55034976) score — expect **0.045** (5 static candidates: `5·18/200=0.045`)
+    if it too completes; that would further confirm the linear model AND that static emission scores.
+  - The real lever on turnaround is queue, not our code — plan submissions expecting multi-hour reruns.
+  - Fold "untimed warm-up before the fill deadline" into the v2 sizing fix.
+
 ## E3f — trivial diagnostic result: NOT our attack logic, NOT our config
 - **Date:** 2026-07-27
 - **Setup:** submitted `attack-trivial-diag` (ref 55034976) — 5 STATIC candidates, zero live probing.
