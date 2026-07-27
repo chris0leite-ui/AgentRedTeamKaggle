@@ -8,4 +8,5 @@ refs/
 # Transient Kaggle output/source downloads (kernel logs, echoed files, pulled kernels)
 scratch_labout/
 scratch_sub/
+scratch_disc/
 out/
