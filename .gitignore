@@ -1,0 +1,5 @@
+# Large, re-downloadable competition SDK + fixtures (fetch via setup_env.sh)
+sdk/
+*.zip
+__pycache__/
+*.pyc
