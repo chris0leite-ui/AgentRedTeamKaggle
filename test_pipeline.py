@@ -68,10 +68,13 @@ def main() -> int:
     ok = True
     # 1) Real packaged agent: must RUN cleanly (findings may be 0 — that's fine).
     ok &= run_case("deterministic (must run)", build_agent_factory("deterministic"),
-                   budget_s=20.0, expect_fire=False)
-    # 2) Obedient mock: primitive must fire and score under the real replay path.
-    ok &= run_case("obedient-mock (must fire)", lambda: ObedientExfilAgent(),
-                   budget_s=10.0, expect_fire=True)
+                   budget_s=8.0, expect_fire=False)
+    # 2) Obedient mock: primitive must fire and score under the real replay path. The mock carries
+    #    a per-turn latency ≈ the real models' turn time (E3l), so generation cost ≈ replay cost and
+    #    run()'s adaptive fill sizes a replay-safe N — instead of racing to the 2000 cap against an
+    #    instant agent, whose replay env-rebuild overhead would then overrun the tight test budget.
+    ok &= run_case("obedient-mock (must fire)", lambda: ObedientExfilAgent(latency_s=0.5),
+                   budget_s=5.0, expect_fire=True)
     print("\nPRE-SUBMISSION GATE:", "GREEN — safe to submit" if ok else "RED — fix before submit")
     return 0 if ok else 1
 

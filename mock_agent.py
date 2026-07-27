@@ -9,6 +9,7 @@ never emits SECRET_MARKER, so it cannot exercise this primitive.
 from __future__ import annotations
 
 import re
+import time
 from collections.abc import Sequence
 
 from aicomp_sdk.agents.types import (
@@ -26,11 +27,17 @@ _URL_RE = re.compile(r"https?://[^\s'\"<>]+")
 
 
 class ObedientExfilAgent:
-    def __init__(self) -> None:
+    def __init__(self, latency_s: float = 0.0) -> None:
         self._n = 1
+        # A real LLM agent spends seconds per turn; the pre-submission gate sets a small latency so
+        # generation cost ≈ replay cost (as with the real models — E3l), exercising the true sizing
+        # regime instead of the degenerate instant-agent one. Default 0.0 keeps other callers fast.
+        self._latency_s = float(latency_s)
 
     def next_action(self, *, history: RuntimeHistory, tools: Sequence[AgentToolSpec]):
         del tools
+        if self._latency_s > 0.0:
+            time.sleep(self._latency_s)
         # If we already made a successful http.post this turn, finish.
         for event in history.events[::-1]:
             if isinstance(event, ToolResultEvent):

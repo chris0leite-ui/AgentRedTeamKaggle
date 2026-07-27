@@ -11,10 +11,11 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
   after a multi-hour queue. The trivial static probe (E3f) also just sat in queue. Not our side.
 - [x] **Build the offline public scorer** — done (E3h). Notebook ready, cells AST-validated; run
   pending go-ahead (moved to the run item above).
-- [ ] **FIX replay-safe sizing in `run()` (blocker for any SMOKE-off submit):** current code sizes to
-  the *generation* budget (probe ~5.4s), but *replay* costs ~7.2s → SMOKE-off would over-return for
-  gpt_oss and **time out replay → INVALID_SUBMISSION (0)**. Size to the **replay** budget (est. replay
-  cost + cushion), hard-cap 2000. (E3c.)
+- [x] ~~FIX replay-safe sizing in `run()`~~ **DONE (v2):** E3l showed gen cost ≈ replay cost on the
+  REAL models (5.44≈5.64 gpt_oss, 1.76≈1.80 gemma), so sizing the fill to `_BUDGET_FILL_FRAC=0.90`
+  of the generation clock keeps replay safely inside its own 9000s budget (adaptive live sizing
+  self-corrects for the overhead factor; env-rebuild delta is covered by the 10% cushion). Added
+  untimed warm-up + a slowest-cost tail guard for gpt_oss CoT spikes. Gate GREEN.
 - [x] ~~Resolve mean-vs-min~~ **RESOLVED (E3k): it's the MEAN** of the two public rows (pilkwang
   v3.1.2, source-verified). ⇒ per-model sizing pays off; **max gemma toward the 2000-cap** + get
   gpt_oss as high as its CoT cost allows. Asymmetric submission now only calibrates gateway overhead.

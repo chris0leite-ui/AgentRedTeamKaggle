@@ -17,7 +17,9 @@ OUT.mkdir(exist_ok=True)
 
 KAGGLE_USERNAME = "chrisleitescha"  # kernel owner (lowercased Kaggle handle)
 COMP = "ai-agent-security-multi-step-tool-attacks"
-SLUG = "attack-single-post-exfil-v1"
+SLUG = "attack-single-post-exfil-v2"  # v2 = first real scoring submission (SMOKE off)
+# Kaggle derives the slug from the TITLE, so keep the title slug-clean and matching SLUG.
+TITLE = "Attack single post exfil v2"
 
 attack_src = (ROOT / "attack.py").read_text()
 
@@ -107,12 +109,13 @@ nb = {
 
 meta = {
     "id": f"{KAGGLE_USERNAME}/{SLUG}",
-    "title": "Attack — single-post exfil v1",
+    "title": TITLE,
     "code_file": "submission.ipynb",
     "language": "python",
     "kernel_type": "notebook",
     "is_private": True,
     "enable_gpu": True,
+    "machine_shape": "NvidiaTeslaT4",  # P100 is rejected by this competition (CLAUDE.md gotcha)
     "enable_internet": False,
     "competition_sources": [COMP],
     "dataset_sources": [],

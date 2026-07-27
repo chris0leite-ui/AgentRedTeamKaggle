@@ -47,19 +47,22 @@ from aicomp_sdk.utils.timebox import Timebox
 MAX_FINDINGS = 2000
 MAX_MESSAGE_CHARS = 2000
 
-# Fraction of the generation budget to consume before stopping (leave a cushion so we never
-# overrun the per-model wall clock). The gateway replays candidates under a separate budget.
-_BUDGET_FILL_FRAC = 0.92
-# When deciding whether to attempt one more candidate, require this many multiples of the
-# running per-candidate cost to remain — a safety margin against a slow tail call.
-_TAIL_MARGIN = 2.5
+# Fraction of the generation budget to consume before stopping. We size the RETURNED list to the
+# generation clock, which — because measured generation cost ≈ replay cost (lab E3l: 5.44≈5.64s
+# gpt_oss, 1.76≈1.80s gemma) — keeps the separate 9000s REPLAY phase safely inside its budget too
+# (a replay overrun raises INVALID_SUBMISSION and ZEROES the whole model row). 0.90 leaves a ~10%
+# cushion for that phase's own one-time model load + drift.
+_BUDGET_FILL_FRAC = 0.90
+# Before starting another candidate, require this many multiples of the SLOWEST observed cost to
+# remain — a tail guard against gpt_oss's occasional ~21s chain-of-thought turn (E3l).
+_TAIL_MARGIN = 2.0
 
-# --- v1 = SMOKE SUBMISSION ---------------------------------------------------------
-# Goal of the first submission: prove the pipeline RUNS end-to-end with MINIMAL runtime,
-# not to score well. In smoke mode we cap the number of candidates and cap the wall time
-# hard, and we cap tool hops so a slow LLM turn can't stall the run. Flip SMOKE_MODE off
-# (or raise the caps) once a first submission has completed cleanly.
-SMOKE_MODE = True
+# --- SMOKE_MODE ------------------------------------------------------------------
+# v1 used SMOKE_MODE=True to prove the pipeline runs with minimal runtime (it completed at 0.090).
+# v2 = first REAL scoring submission: SMOKE off, adaptive validation-fill sized to the replay
+# budget, untimed model-load warm-up (v1's 45s cap was shorter than the model load, so only 1
+# candidate survived — E3g). The smoke knobs are retained (unused) for future pipeline checks.
+SMOKE_MODE = False
 SMOKE_MAX_FINDINGS = 8
 SMOKE_MAX_SECONDS = 45.0
 SMOKE_MAX_TOOL_HOPS = 4
@@ -86,23 +89,37 @@ class AttackAlgorithm(AttackAlgorithmBase):
         max_steps = int(getattr(config, "max_steps", 10**9))
 
         findings: list[AttackCandidate] = []
-        per_cost: float | None = None  # EWMA of seconds per candidate
+        slowest = 0.0  # worst per-candidate cost seen (drives the tail guard)
         domains = self._unique_domains()
         step = 0
+
+        # Untimed warm-up: the first interact pays the one-time model load (~57s gpt_oss /
+        # ~145s gemma — E3l). We probe once BEFORE the sizing loop so that load is not mistaken
+        # for a per-candidate cost (which would truncate the fill, as v1's 45s cap did — E3g).
+        # It still counts against `used`, so the deadline accounting stays honest; we just keep
+        # it out of `slowest`. A fired warm-up candidate is kept, not wasted.
+        try:
+            warm_msg = self._exfil_message(next(domains), step)
+            step += 1
+            if self._probe(env, warm_msg, max_hops):
+                findings.append(AttackCandidate.from_messages([warm_msg]))
+        except Exception:
+            pass
 
         while len(findings) < cap and step < max_steps:
             used = budget_s - tb.remaining()
             if used >= deadline:
                 break
-            # Don't start a candidate we can't comfortably finish.
-            if per_cost is not None and tb.remaining() <= per_cost * _TAIL_MARGIN:
+            # Don't start a candidate we might not finish before the deadline — reserve a
+            # multiple of the slowest turn seen so a CoT spike on the last candidate can't overrun.
+            if slowest > 0.0 and tb.remaining() <= slowest * _TAIL_MARGIN:
                 break
 
             message = self._exfil_message(next(domains), step)
             before = tb.remaining()
             fired = self._probe(env, message, max_hops)
             cost = max(0.0, before - tb.remaining())
-            per_cost = cost if per_cost is None else (0.7 * per_cost + 0.3 * cost)
+            slowest = max(slowest, cost)
             step += 1
 
             if fired:
