@@ -4,3 +4,7 @@ sdk/
 __pycache__/
 *.pyc
 refs/
+
+# Transient Kaggle output downloads (kernel logs, echoed files)
+scratch_labout/
+out/
