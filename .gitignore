@@ -5,6 +5,7 @@ __pycache__/
 *.pyc
 refs/
 
-# Transient Kaggle output downloads (kernel logs, echoed files)
+# Transient Kaggle output/source downloads (kernel logs, echoed files, pulled kernels)
 scratch_labout/
+scratch_sub/
 out/
