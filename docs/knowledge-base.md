@@ -40,6 +40,10 @@ across turns.
   attack economics therefore favor the highest-severity primitive that *reliably* fires.
 - **Validation-fill** (generate → replay → keep only if it fired) turns an attack into a measurable
   fire-efficiency, and separates "does it work" from "how much throughput".
+- **Replay-based scoring has a cost that scales with the number of candidates.** When the evaluator
+  re-executes each submitted candidate against a live model, more candidates = longer (and pricier)
+  scoring. Size the submission to the *replay* budget, not just the generation budget — returning
+  fewer, higher-quality candidates can be the difference between a scored run and a timed-out one.
 
 ## Transferable takeaways
 - The decisive variable is usually the **guardrail, not the agent** — characterize the defense first,

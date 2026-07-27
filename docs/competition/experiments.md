@@ -27,3 +27,20 @@ steps**. One entry per submission or notable local run.
   - Record the posted score here when it lands.
   - E2: turn SMOKE_MODE off, measure real per-model throughput/score.
   - T4 + `KAGGLE_API_TOKEN` gotchas captured in `BOOTSTRAP.md`.
+
+### Follow-up (same day) — score still PENDING at ~2h; investigated
+- **Observations:**
+  - Pulled 7 real competitor kernels + the official starter via API, and read the gateway/SDK
+    source. Our notebook's rerun path is functionally equivalent to the official starter
+    (`serve()` self-gates blocking on `KAGGLE_IS_COMPETITION_RERUN`); our `run()` matches the
+    official live-probe idiom and is hard-capped at 45s in SMOKE_MODE.
+  - Verified the gateway budget: `DEFAULT_BUDGET_S = 9000s`, run **twice per model** (generation +
+    replay), ×2 models — so multi-hour reruns are expected. Startup limit is 900s (a dead server
+    errors at 15 min, does not hang). No error observed → the server started fine.
+  - A competitor reported **restricting the candidate count to reduce rerun duration** — confirms
+    replay cost scales with the number of returned candidates ("replay-safe sizing").
+  - No evidence our submission is broken; the long PENDING is most consistent with queue + the heavy
+    two-phase per-model budget. The colleague's ~20-min turnaround is the low-queue outlier.
+- **Recommended next steps:**
+  - Keep waiting on ref 55029825; treat an eventual ERROR (not a slow PENDING) as the signal to change.
+  - For E2, size candidates to the replay budget; keep a static blind fallback (`_emit(FALLBACK_N)`).

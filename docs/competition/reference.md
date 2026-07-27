@@ -61,10 +61,27 @@ Bypassed only if context carries `user_authorized` / `user_confirmed_safe`.
 
 ## Submission mechanics (code competition)
 Notebook submission. The notebook: (1) adds the mounted `aicomp_sdk` + `kaggle_evaluation` to
-`sys.path`; (2) writes `attack.py` to `/kaggle/working/attack.py`; (3) on the scored rerun
-(`KAGGLE_IS_COMPETITION_RERUN`) runs the blocking
-`kaggle_evaluation.jed_attack_134815.jed_attack_inference_server.JEDAttackInferenceServer().serve()`;
-off-rerun writes a placeholder `submission.csv` plus a self-test. The gateway replays candidates
-against **2 models (gpt_oss, gemma) × 2 guardrails (public = Optimal, private = hidden)** → 4 rows.
-`run()` is invoked **once per model** with a large (~9000s) per-model budget. Public score =
-mean(gpt_oss_public, gemma_public).
+`sys.path`; (2) writes `attack.py` to `/kaggle/working/attack.py`; (3) calls
+`kaggle_evaluation.jed_attack_134815.jed_attack_inference_server.JEDAttackInferenceServer().serve()`.
+`serve()` self-gates: it always starts the gRPC server, and only blocks
+(`wait_for_termination`) when `KAGGLE_IS_COMPETITION_RERUN` is set — so call it **unconditionally**
+(the official starter and all working kernels do). The gateway drives it against
+**2 models (gpt_oss, gemma) × 2 guardrails (public = Optimal, private = hidden)** → 4 rows.
+Public score = mean(gpt_oss_public, gemma_public).
+
+## Timing & scoring latency (`jed_attack_gateway.py`, verified)
+Per model the gateway runs **two phases, each with its own `DEFAULT_BUDGET_S = 9000s`**:
+1. **generation** — our `run(env, config)` is invoked once; `config.time_budget_s ≈ 9000`.
+2. **replay** — the gateway independently re-executes every returned candidate to score it
+   (`replay_deadline_s = now + 9000`).
+
+So the wall clock is `(generation + replay) × 2 models`, plus loading a 20B model (`gpt_oss`) on a
+T4, plus GPU queue. **Multi-hour reruns are normal; a submission sitting `PENDING` for hours is not
+evidence of a bug.** Startup limit `STARTUP_LIMIT_SECONDS = 900` — if the server never starts, the
+gateway errors at 15 min ("Failed to connect after 900s"), it does **not** hang.
+
+**Replay cost scales with the number of returned candidates** — each candidate is re-run against the
+live model during replay. This is the primary lever on rerun duration: **restrict the candidate
+count to shorten scoring** (confirmed empirically by a competitor). Hence the "replay-safe sizing"
+meta — return only as many firing candidates as the replay budget can score in time.
+(Note: the docs' `1800s` is the local `aicomp test` default, **not** the Kaggle budget.)
