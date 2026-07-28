@@ -5,7 +5,44 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3o — full density lab: density is a MAJOR lever (~2×), mainly by defeating the 2000-candidate cap
+- **Date:** 2026-07-28 — **corrects the E3n smoke read AND the harness's own raw/s "verdict."**
+- **What:** `lab_density/` both models, K∈{1,3,5,8}, variants list/multi, 2 trials.
+- **Raw observations:**
+  - **`list` (one message, K posts) fails** on both: gpt_oss emits 0–4 of K (erratic, CoT-slow up to
+    31s); gemma emits **exactly 1** regardless of K. Dead end.
+  - **`multi` (K-message chain, 1 post each — a real `AttackCandidate.from_messages([...])`) works
+    perfectly**: every post fires, no dedup (K=8 → raw 130). Guardrail never denies (all `ok`). ✓
+  - gpt_oss `multi` raw/s climbs 3.8→**7.47** (K=8): the slow first turn is amortized over the chain.
+  - gemma `multi` raw/s is **flat ~9.3–10.3** — hence the harness printed "multiplier 1.14× → useless."
+- **Why the harness verdict is WRONG — the 2000-CANDIDATE cap:** row score is
+  `min(2000, 9000/T_K)·(16K+2)/200`, not raw/s. gemma single-post is **cap-bound at 2000 candidates →
+  row 180** (confirmed E3l), NOT speed-bound. Packing K posts/candidate multiplies raw under the same
+  cap. Cap-aware row scores from the lab timings:
+  | model | shape | T/cand | N | row |
+  |---|---|---|---|---|
+  | gemma | single-post | 1.6s | 2000 (cap) | **180** |
+  | gemma | **multi K=3** | 5.1s | 1765 | **~441** |
+  | gpt_oss | single-post | ~4s | ~1900 | ~170 |
+  | gpt_oss | **multi K=8** | 17.4s | ~517 | **~336** |
+  - **Projected public MEAN: ~175 (single-post) → ~350–390 (density)** — ~2× v2, ~3× the LB top (112).
+  - gemma's win is **pure arithmetic** (cap defeat), independent of the warm-cache effect → robust.
+    gpt_oss's ~2× leans on slow-first-turn amortization, which is more gateway-dependent.
+- **Caveats before betting:** (1) lab timings exclude the gateway-overhead factor (v2 pending) — the
+  RATIO should hold but absolute N scales with real per-turn cost; (2) PRIVATE guardrail may not allow
+  dense posts (forward-plan.md); (3) needs offline-scorer re-verification with dense candidates.
+- **Recommended next steps:**
+  1. Redesign `run()` to **blind-emit dense candidates** (`from_messages` of K single-post messages;
+     static works per trivial E3i) — gemma K≈3, gpt_oss K≈8; size candidate count to the replay budget.
+     Because `run()` isn't told the model, make K **adaptive**: measure per-candidate cost live and pick
+     the K that maximizes cap-aware row (K=3-ish when fast/cap-bound, higher when slow).
+  2. Extend the offline scorer to score dense candidates; confirm ~350 offline.
+  3. Then ONE submission. Keep single-post v2 as the safe fallback.
+
 ## E3n — density SMOKE (gpt_oss): guardrail allows multi-post & no dedup CONFIRMED, but emission is poor
+> **SUPERSEDED by E3o:** the smoke's "~1.14×, maybe drop density" read was premature — it saw only
+> gpt_oss K≤3 (before amortization kicks in) and used the raw/s metric, which ignores the
+> 2000-candidate cap that density exists to defeat. Full run shows density ~2× (gemma 180→~440). ↑
 - **Date:** 2026-07-28
 - **What:** `lab_density_smoke/` (gpt_oss, K∈{1,3}, variants list/multi). Loaded in 68s.
 - **Observations (gpt_oss):**
