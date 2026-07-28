@@ -88,7 +88,9 @@ model emission (above). Numbers are optimistic until the lab measures real emiss
 3. **[lab, profiling] Per-turn token/latency breakdown** on both models; quantify the gpt_oss CoT tail.
 4. **[lab] CoT-suppression prompt** for gpt_oss (collapse/forged-analysis form): does it cut turn cost
    and kill the 21 s tail while keeping 100% fire?
-5. **[real, 1 sub]** The overhead factor + mean cross-check (v2, ref 55038685) — pending.
+5. **[RESOLVED, E3r]** Overhead factor = **~5.3×** (v2 real 29.34 vs offline 155); mean confirmed
+   (E3k). Recalibrate: real ≈ offline ÷ 5.3. Fire rate ~100% (E3s) → the wall is throughput, and
+   the #1 lever is now **CoT suppression** for the slow gpt_oss row (density already banked in v3).
 6. **[decision]** If density works in lab, redesign `run()` to emit dense candidates sized to the
    replay budget; re-verify with the offline scorer before spending a submission.
 

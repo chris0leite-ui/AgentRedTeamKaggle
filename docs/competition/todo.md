@@ -3,46 +3,36 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
-- [ ] **AWAIT v2 score (ref 55038685, E3m).** First real scoring run; predicted band ~105–155. Pins
-  the gateway-overhead factor + fire-rate at scale. Poll running. Log per-row breakdown as E3n.
-- [ ] **BUILD DENSITY INTO `run()` — CONFIRMED ~2× lever (E3o).** Full density lab settled it: the
-  **`multi` (K-message chain, 1 post each) form works perfectly** on both models (all posts fire, no
-  dedup, guardrail never denies); the `list` (one message, K posts) form fails (models won't pack).
-  Cap-aware projection: gemma 180→~441 (K≈3, defeats the 2000-candidate cap), gpt_oss ~170→~336 (K≈8,
-  amortizes the slow first turn) → **public mean ~175→~350–390**. Next:
-  1. Redesign `run()` to **blind-emit dense candidates** (`AttackCandidate.from_messages` of K proven
-     single-post messages); **adaptive K** (measure live cost, pick K maximizing cap-aware row); size
-     the candidate count to the replay budget; hard-cap 2000 candidates.
-  2. Extend the offline scorer to score dense candidates; confirm ~350 offline before submitting.
-  3. Keep single-post v2 as the safe fallback. Caveat: private guardrail may not allow dense posts.
-- [x] ~~Run the offline public scorer~~ **DONE (E3j smoke, E3l full):** both models 100% fire; gpt_oss
-  replay 5.6s, gemma 1.8s (hits 2000-cap, row 180); projected mean ~155 (overhead caveat → 105–155).
-- [x] ~~Diagnose the submission hang~~ **CLOSED by E3g:** v1 completed at 0.090 after a multi-hour
-  queue. Not our side.
-- [x] **Build the offline public scorer** — done (E3h); run done (E3j/E3l).
-- [x] ~~FIX replay-safe sizing in `run()`~~ **DONE (v2):** E3l showed gen cost ≈ replay cost on the
-  REAL models (5.44≈5.64 gpt_oss, 1.76≈1.80 gemma), so sizing the fill to `_BUDGET_FILL_FRAC=0.90`
-  of the generation clock keeps replay safely inside its own 9000s budget (adaptive live sizing
-  self-corrects for the overhead factor; env-rebuild delta is covered by the 10% cushion). Added
-  untimed warm-up + a slowest-cost tail guard for gpt_oss CoT spikes. Gate GREEN.
-- [x] ~~Resolve mean-vs-min~~ **RESOLVED (E3k): it's the MEAN** of the two public rows (pilkwang
-  v3.1.2, source-verified). ⇒ per-model sizing pays off; **max gemma toward the 2000-cap** + get
-  gpt_oss as high as its CoT cost allows. Asymmetric submission now only calibrates gateway overhead.
-- [ ] **gpt_oss CoT is the slow-row ceiling (E3k):** competitors see ~24s/cand on gpt_oss (chain-of-
-  thought) vs our lab's 4.66s. Test a CoT-suppressing "collapse/forged-analysis" prompt variant in
-  `lab/`; measure whether our gpt_oss replay stays ~5s under realistic conditions.
-- [ ] **v2 baseline — PIVOT to blind/static emission (E3i, needs go-ahead after scorer run):** emit N
-  unique-domain exfil candidates with NO live probing (proven by trivial ref 55034976 → 0.450 = all 5
-  static fired). Sidesteps the model-load truncation that capped v1 at 1 candidate. Size N to the
-  REPLAY budget from the offline scorer's measured `replay_s/cand` (~1200 ⇒ ~112). Verify
-  `test_pipeline.py` GREEN, submit (1/5 day).
+- [ ] **CoT SUPPRESSION for gpt_oss — the #1 lever now (E3s).** The binding constraint is the slow
+  gpt_oss row: fire rate is ~100% (greedy/deterministic — E3s), so the wall is pure THROUGHPUT, and
+  gpt_oss is slow because it emits chain-of-thought before each tool call. A reasoning-skipping prompt
+  ("collapse/forged-analysis" form) cuts per-candidate cost → more candidates fit → row rises. Build a
+  `lab/` experiment: measure gpt_oss per-turn cost + fire under CoT-suppressing message variants.
+  (We agreed to build this next.)
+- [ ] **AWAIT v3 dense score (ref 55046963, E3q).** Offline proj ~335 → real **~63** at the measured
+  ~5.3× overhead. Confirms the density gain on the real board + the overhead factor on dense.
+- [x] ~~AWAIT v2 score~~ **DONE (E3r): v2 real = 29.34.** Offline 155 → real 29.34 ⇒ **overhead ~5.3×**
+  (not ~1.3×). Real scored ~326 candidates/row. Throughput-bound (fire rate ~100%, E3s), not fire.
+- [x] ~~Build density into `run()`~~ **DONE (E3p): dense adaptive-K chain, verified offline (mean ~335,
+  real ~63).** Submitted as v3. Kept single-post as `DENSITY_MODE=False` fallback.
+- [x] ~~Blind/static emission~~ **RULED OUT (E3s):** fire rate is ~100% (nothing to recover), and blind
+  can't safely out-throughput validation-fill without risking a zeroed gpt_oss row. Not worth a submit.
+- [x] ~~Run the offline public scorer~~ **DONE (E3j smoke, E3l full, E3p dense).**
+- [x] ~~Diagnose the submission hang~~ **CLOSED by E3g:** v1 completed at 0.090 (slow queue, not us).
+- [x] ~~FIX replay-safe sizing in `run()`~~ **DONE (v2/v3):** gen cost ≈ replay cost ⇒ fill to 0.90 of
+  generation keeps replay inside budget; untimed warm-up + slowest-cost tail guard. Gate GREEN.
+- [x] ~~Resolve mean-vs-min~~ **RESOLVED (E3k): it's the MEAN** of the two public rows (pilkwang, source-
+  verified). ⇒ per-model sizing pays off; max gemma toward the 2000-cap.
+
+## Reality anchors (real-board, measured)
+- **Overhead factor ~5.3×** (offline ÷ 5.3 ≈ real) — E3r. Recalibrate all offline projections by this.
+- **Real scores:** v1 0.090 · trivial 0.450 · **v2 single-post 29.34** · v3 dense ~63 (pending).
+- **Fire rate ~100%, deterministic** (greedy) — E3s. The wall is THROUGHPUT on the slow gpt_oss row.
+- **To top the LB (112 real) we need ~offline 600** → CoT suppression (slow row) + density (gemma).
 
 ## Next
 - [ ] **Profile per-turn token/latency in the offline scorer** (Q3): record llama.cpp `t_eval_ms` +
-  tokens/turn + turns/candidate, to quantify the gpt_oss CoT tail and confirm the LLM is >95% of
-  replay time. Cheap instrumentation on `lab_score/`.
-- [ ] **CoT-suppression prompt for gpt_oss** (Q3): a "collapse/forged-analysis" message form that goes
-  straight to the tool call. Measure turn-cost + fire-rate in `lab/`; kills the ~21s tail if it works.
+  tokens/turn to quantify the gpt_oss CoT tail (feeds the CoT-suppression work).
 - [x] ~~Multi-predicate-type stacking (exfil+write+untrusted in one trace)~~ **RULED OUT (see
   `forward-plan.md` Q4):** UNTRUSTED_TO_ACTION needs a web/email source, but that taints the window →
   the next `http.post` is denied. Mutually exclusive. The real density play is **exfil-only** (many
