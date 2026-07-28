@@ -5,6 +5,30 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3p — dense run() VERIFIED offline: projected public mean ~335 (2.2× single-post)
+- **Date:** 2026-07-28. Dense `attack.py` (adaptive-K chain) through the real offline scorer.
+- **Results (both models 100% fire):**
+  | model | raw/cand | replay s/cand | gen s/cand | replay-safe N | proj row |
+  |---|---|---|---|---|---|
+  | gpt_oss | 120.0 | 16.23 | 16.00 | 499 | **299.4** |
+  | gemma | 120.7 | 13.13 | 13.10 | 616 | **371.7** |
+  - **Projected public mean = 335.5** (min 299.4). vs single-post v2 ~155, LB top 112.
+- **Observations:**
+  - **The models OVER-post:** raw/cand ≈ 120 = ~7.4 posts/candidate, though K=3 (each 1-post message
+    elicited ~2–3 posts using its 8 hops). Still 100% fire, stable across all 24 candidates. This is a
+    bonus (more raw/candidate) — and the adaptive validation-fill self-sizes to the resulting cost, so
+    over-posting can't overrun.
+  - **gen ≈ replay** on both (16.0≈16.2, 13.1≈13.1) ⇒ the replay-safe sizing property holds for dense
+    too; no overrun risk.
+  - K resolved to 3 (adaptive floor) for both at these timings; real-budget K also = 3.
+- **Caveats:** (1) offline = no gateway gRPC overhead; real absolute score scales down with the
+  overhead factor (v2 pending), but the **ratio ~2.2× over single-post holds** → real dense ≈ 2.2×
+  real single (≈240 if single is 112, ≈335 if 155) — either way well past the 112 wall. (2) PRIVATE
+  guardrail may deny dense posts (unobservable). (3) v2 single-post still PENDING as the anchor.
+- **Recommended next step:** this is submission-ready (gate GREEN, offline-verified, self-sizing
+  safe). Spend ONE submission on dense (keeps a slot in reserve; v2 still in queue as the single-post
+  anchor). Then compare dense-real vs v2-real to pin the overhead factor.
+
 ## E3o — full density lab: density is a MAJOR lever (~2×), mainly by defeating the 2000-candidate cap
 - **Date:** 2026-07-28 — **corrects the E3n smoke read AND the harness's own raw/s "verdict."**
 - **What:** `lab_density/` both models, K∈{1,3,5,8}, variants list/multi, 2 trials.
