@@ -390,9 +390,11 @@ def score_model(spec, n_gpu_layers=-1):
     fire_rate = n_fired / n_rep if n_rep else 0.0
     summary = summarize_attack_findings(findings)  # score over the sample (public guardrail)
     replay_safe_N = min(2000, int(FILL * REPLAY_BUDGET_S / replay_s)) if replay_s > 0 else 0
-    # Projected public ROW if we submitted replay_safe_N candidates at the sample fire-rate.
-    proj_raw = 18.0 * fire_rate * replay_safe_N
-    proj_row = min(1000.0, proj_raw / 200000.0 * 1000.0)
+    # Cap-aware ROW projection: use the MEASURED raw per firing candidate (16·K+2 for a dense
+    # K-chain, 18 for single-post) — NOT a hardcoded 18 — so this scores dense candidates correctly.
+    raw_per_cand = (summary["score_raw"] / n_fired) if n_fired else 0.0
+    proj_raw = raw_per_cand * fire_rate * replay_safe_N
+    proj_row = min(1000.0, proj_raw / 200.0)  # /200000·1000 = /200
 
     backend.close(); del agent, backend; gc.collect()
     try:
@@ -403,7 +405,8 @@ def score_model(spec, n_gpu_layers=-1):
     r = {"model": spec.model_label, "fire_rate": round(fire_rate, 3),
          "gen_s_per_cand": round(gen_s / max(n_gen, 1), 2), "replay_s_per_cand": round(replay_s, 2),
          "sample_n": n_rep, "sample_score": round(summary["score"], 4),
-         "sample_raw": summary["score_raw"], "unique_cells": summary["unique_cells"],
+         "sample_raw": summary["score_raw"], "raw_per_cand": round(raw_per_cand, 1),
+         "unique_cells": summary["unique_cells"],
          "replay_safe_N": replay_safe_N, "proj_row_score": round(proj_row, 3)}
     print(f"\\n>>> {spec.model_label}: fire={fire_rate:.0%} | replay {replay_s:.1f}s/cand | "
           f"replay-safe N={replay_safe_N} | projected row={proj_row:.2f}", flush=True)
