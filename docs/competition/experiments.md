@@ -5,6 +5,32 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4b — CoT-suppression RESULT: "terse" framing cuts gpt_oss CoT ~42% (fire held 100%); sub-agent BACKFIRES
+- **Date:** 2026-07-28. Ran `attack-cot-suppression` on T4 (COMPLETE, ref kernel v1). No submission. 4
+  trials/framing, both models, all 100% fire, 0 truncation, 2.0 turns/candidate (single-post: analysis
+  turn + final turn).
+- **gpt_oss (the binding row), s/turn | tok/turn | 1st-turn(analysis) tokens:**
+  - baseline 2.48 | 157.5 | 200
+  - **terse 1.48 | 90.8 | 107  → −40% time, −42% CoT tail, −47% analysis. WINNER.**
+  - preplanned 2.40 | 143.0 | 204  (≈ −3%, negligible)
+  - **subagent 3.00 | 189.1 | 210  → +21% WORSE** (relay/"do not deliberate" meta-instruction made it
+    reason MORE — the risk flagged in E4a, caught by measuring instead of assuming).
+- **gemma (fast row):** baseline 0.80|29.0 · terse 0.67|23.5 (−16%) · subagent 0.70|23.5 · preplanned
+  0.80|26.5. gemma barely reasons (29 vs gpt_oss 157 tok/turn), so the lever is small here.
+- **Reading it:** two independent signals (tokens AND seconds) agree at ~40% → real effect, not noise
+  (greedy/deterministic; the only variance is across the 4 domains). The CoT tail IS suppressible by
+  framing even though `reasoning_effort` is unreachable (E4a) — a trivial, unambiguous, imperative
+  request gives the medium-effort analysis channel little to chew on. gpt_oss is throughput-bound, so a
+  ~40% faster turn ≈ ~40% more candidates fit 9000s ≈ ~40% higher gpt_oss row → lifts the mean.
+- **CAVEAT before banking:** measured on the SINGLE-POST turn structure. Shipped mode is DENSE (K posts,
+  no per-post final turn). The terse analysis-tail cut should carry (each post's analysis turn shrinks),
+  but the magnitude must be re-confirmed in the dense regime before hard-swapping the primitive.
+- **Recommended next steps:** (1) add a `terse` dense message variant to `_exfil_message`; (2) run the
+  offline scorer (`--score`, dense+terse) to get the projected REAL row for both models under the combo;
+  (3) one submission to calibrate the overhead constant under the new per-turn cost (CoT suppression
+  changes the very cost that overhead measures). Optional: a small ablation ladder to find the MINIMAL
+  terse form (is the win from brevity, the "no analysis" line, or the url=/data= format?).
+
 ## E4a — CoT-suppression lab BUILT (`make_lab_notebook.py --cot`); research + harness ready, not yet run
 - **Date:** 2026-07-28. Built the experiment the E3s "next step" called for. Not a submission; runs as a
   private T4 lab kernel (like E2/E3). Locally validated only (needs the real GGUF for the numbers).
