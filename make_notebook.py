@@ -17,9 +17,9 @@ OUT.mkdir(exist_ok=True)
 
 KAGGLE_USERNAME = "chrisleitescha"  # kernel owner (lowercased Kaggle handle)
 COMP = "ai-agent-security-multi-step-tool-attacks"
-SLUG = "attack-single-post-exfil-v2"  # v2 = first real scoring submission (SMOKE off)
+SLUG = "attack-dense-exfil-v3"  # v3 = dense adaptive-K message-chain candidates (E3o/E3p)
 # Kaggle derives the slug from the TITLE, so keep the title slug-clean and matching SLUG.
-TITLE = "Attack single post exfil v2"
+TITLE = "Attack dense exfil v3"
 
 attack_src = (ROOT / "attack.py").read_text()
 

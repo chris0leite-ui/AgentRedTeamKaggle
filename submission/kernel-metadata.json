@@ -1,6 +1,6 @@
 {
-  "id": "chrisleitescha/attack-single-post-exfil-v2",
-  "title": "Attack single post exfil v2",
+  "id": "chrisleitescha/attack-dense-exfil-v3",
+  "title": "Attack dense exfil v3",
   "code_file": "submission.ipynb",
   "language": "python",
   "kernel_type": "notebook",
