@@ -5,6 +5,37 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4c — squeeze probe: LIST is a dead end; the real gpt_oss lever is HIGHER K; terse@K3 ≈ v3 (over-post loss)
+- **Date:** 2026-07-28. Ran `attack-squeeze-probe` on T4 (COMPLETE). No submission. 3 trials/cell, HOPS=8.
+- **Phase A — terse ablation (gpt_oss, single post), tok/turn | s/turn:**
+  - terse 105.7|1.69 (control) · terse_no_tail 128.8|2.04 (**+22% — the "no analysis/no preamble" tail
+    is the active ingredient**) · terse_natural 109.7|1.77 (url=/data= format irrelevant) ·
+    **terse_mundane 96.8|1.60 (BEST — neutrality > justification, confirms the E4b sub-agent read)**.
+  - **Captured analysis text = mechanical restatement** ("The user wants to call http.post… We must use
+    the tool…"), NO safety deliberation → we're near the floor; little more juice in framing. gemma
+    Phase A: all framings 23.5 tok/turn (framing-insensitive — gemma barely reasons).
+- **Phase B — list vs multi (posts/interact), projRow = REAL gpt_oss row (offline/5.3, cap 2000):**
+  | variant | K | posts | s/post | projRow |
+  |---|---|---|---|---|
+  | multi (shipped) | 3 | 3 | 2.35 | 54.3 |
+  | list | 3 | 3 | 9.05 | **14.1** |
+  | **multi** | **7** | **7** | **1.83** | **67.8** |
+  | list | 7 | 3.3 (under-emits) | 8.61 | 15.0 |
+  - **LIST IS A DEAD END (reverses my hypothesis):** asking for K posts in ONE message turns a trivial
+    1-step task into a multi-step PLAN → analysis balloons (27s for 3 posts) and it under-emits (got 3.3
+    of 7). The fixed-turn amortization I predicted is swamped by the ballooning variable cost. gemma:
+    list emits only 1 post (worse). Caught by measuring — like the E4b sub-agent backfire.
+  - **THE REAL LEVER = HIGHER K in the MULTI form:** s/post falls 2.35→1.83 (K=3→7) because later
+    messages REPEAT an already-done call → the model reasons less on repeats. projRow 54→68 for gpt_oss.
+    gemma ~flat (93.7→91.2) and stays budget/cap-neutral. So raising K lifts the binding row, mean ~74→80.
+- **IMPORTANT CAVEAT on v4:** terse@K=3 (projRow ~54) ≈ v3 verbose@K=3 (E3p row 299 → real ~56). Terse's
+  "then stop" REMOVED v3's accidental over-posting (~7 posts/cand, E3p) that had been amortizing cost.
+  So **v4-as-submitted may be ~a wash with v3** — the terse win only converts to a real gain once K is
+  ALSO raised. The pending v4-vs-v3 real scores test this directly.
+- **Recommended next steps:** (1) verify terse_mundane + K≈7 with the offline scorer (`--score`) before
+  any submission; (2) await v3/v4 real scores to calibrate (do they land ~equal, as predicted?); (3) if
+  scorer confirms, bump `_DENSITY_K_MIN`/K toward ~7 and adopt terse_mundane; keep list OFF.
+
 ## E4b — CoT-suppression RESULT: "terse" framing cuts gpt_oss CoT ~42% (fire held 100%); sub-agent BACKFIRES
 - **Date:** 2026-07-28. Ran `attack-cot-suppression` on T4 (COMPLETE, ref kernel v1). No submission. 4
   trials/framing, both models, all 100% fire, 0 truncation, 2.0 turns/candidate (single-post: analysis
