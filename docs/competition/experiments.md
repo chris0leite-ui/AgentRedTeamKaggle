@@ -5,6 +5,26 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4d — offline scorer VERIFIES terse_mundane + K=7: projected mean 408 (+22% over v3's 335) → real ~77
+- **Date:** 2026-07-28. Ran `attack-offline-scorer` (v3 of that kernel) on T4 with the new attack.py
+  (terse_mundane, `_DENSITY_K_MIN=7`). No submission. SCORE_N=24, gym env, OptimalGuardrail.
+- **Results (both models 100% fire; per-candidate times very stable):**
+  | model | raw/cand | replay s/cand | gen s/cand | replay-safe N | proj row (offline) |
+  |---|---|---|---|---|---|
+  | gpt_oss | 120.7 | 14.4 | 14.2 | 561 | **338.5** |
+  | gemma | 120.7 | 10.2 | 10.1 | 793 | **478.4** |
+  - **Projected public mean = 408.5** (min 338.5) vs v3's 335 (E3p) = **+22% offline**. At ÷5.3
+    overhead → **real ~77** (vs v3/v4 projected ~63); field top is 112 real.
+- **Why it improved (confirms E4c):** raw/cand ≈ 120 in BOTH v3 and this run (~7.4 posts/cand) — v3 got
+  there via accidental over-posting at K=3, this via 7 terse messages. SAME raw, but terse turns are
+  cheaper (gpt_oss replay 16.2→14.4 s/cand, gemma 13.1→10.2), so more candidates fit → higher rows. The
+  gain is cheaper posts, not more of them.
+- **gen ≈ replay on both** (14.2≈14.4, 10.1≈10.2) → replay-safe sizing still holds at K=7; no overrun.
+- **Recommended next steps:** (1) AWAIT v3 (55046963) + v4 (55057100) real scores — they calibrate the
+  ÷5.3 overhead and test the "v4≈v3" prediction; do NOT spend a new submission until they land. (2) Once
+  calibrated, submit terse_mundane+K=7 as v5 (offline 408 → real ~77 at 5.3×). (3) The submission should
+  size to the SMALLER replay-safe N (gpt_oss 561) — already what the adaptive fill does.
+
 ## E4c — squeeze probe: LIST is a dead end; the real gpt_oss lever is HIGHER K; terse@K3 ≈ v3 (over-post loss)
 - **Date:** 2026-07-28. Ran `attack-squeeze-probe` on T4 (COMPLETE). No submission. 3 trials/cell, HOPS=8.
 - **Phase A — terse ablation (gpt_oss, single post), tok/turn | s/turn:**
