@@ -5,6 +5,26 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4e — v3 dense FAILED on the real board (COMPLETE, no public score) → likely replay overrun; sizing risk
+- **Date:** 2026-07-28. v3 dense (ref 55046963) is **COMPLETE with a BLANK publicScore** = the
+  `INVALID_SUBMISSION` signature (gateway zeroes the whole run when the replay phase overruns its 9000s
+  budget — reference.md). v4 (55057100) still PENDING. Best real remains v2 single-post = 29.34.
+- **This breaks our offline safety assumption.** The offline scorer said "gen ≈ replay ⇒ self-sizing
+  safe" for v3 (and for terse K=7) — but v3 shows that does NOT transfer to the real board for dense.
+- **Leading hypothesis — over-post variance + a thin margin:** `run()` sizes the returned list to
+  `_BUDGET_FILL_FRAC=0.90` of the GENERATION clock, assuming replay costs the same (only a 10% cushion).
+  v3's VERBOSE message over-posts heavily and variably (~2.5 posts/msg → ~7/cand). If real replay
+  over-posts even slightly more than our generation probe, replay > estimate → blows the 10% margin →
+  overrun → INVALID. (Single-post v2 has small, uniform candidates, so its 10% margin held.)
+- **Risk ranking by candidate size (bigger = tighter overrun margin):** v2 single-post (SAFE) < v3/v4
+  dense K=3 (3 msgs/cand) < **v5 terse K=7 (7 msgs/cand ≈ 2.3× longer replay/cand = HIGHEST risk).**
+  So do NOT submit v5 as-is. Note terse posts ~1×/msg (predictable), so v4/v5 over-post LESS than v3 —
+  they may be safer on variance even though bigger; v4 is the decisive test.
+- **Recommended next steps:** (1) AWAIT v4 — success ⇒ terse's predictable posting fixed the gen/replay
+  match (overrun was v3 over-post variance); failure ⇒ fundamental dense sizing bug. (2) Before ANY
+  dense submission, make `run()` sizing conservative: drop `_BUDGET_FILL_FRAC` 0.90→~0.6 and/or raise
+  `_TAIL_MARGIN`, so replay can't overrun even when slower than generation. (3) v2 (29.34) is the anchor.
+
 ## E4d — offline scorer VERIFIES terse_mundane + K=7: projected mean 408 (+22% over v3's 335) → real ~77
 - **Date:** 2026-07-28. Ran `attack-offline-scorer` (v3 of that kernel) on T4 with the new attack.py
   (terse_mundane, `_DENSITY_K_MIN=7`). No submission. SCORE_N=24, gym env, OptimalGuardrail.
