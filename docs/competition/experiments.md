@@ -5,6 +5,37 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4a — CoT-suppression lab BUILT (`make_lab_notebook.py --cot`); research + harness ready, not yet run
+- **Date:** 2026-07-28. Built the experiment the E3s "next step" called for. Not a submission; runs as a
+  private T4 lab kernel (like E2/E3). Locally validated only (needs the real GGUF for the numbers).
+- **Research settled WHY true CoT suppression is only partly in reach (source-verified):**
+  - gpt_oss uses OpenAI **harmony**: hidden **analysis** channel (CoT) → **commentary** (tool call) →
+    **final**. Analysis tokens are pure decode cost we pay per turn; the scorer never sees them.
+  - The real off-switch `reasoning_effort: low` is a **system-level** control. We only write the **user**
+    message (`AttackCandidate` = user-message chain), and gpt-oss/llama.cpp only honor reasoning_effort
+    from the system prompt / `chat_template_kwargs` — **not** the user turn (llama.cpp disc. #15142; HF
+    gpt-oss disc. #28/#86). The gateway sets no reasoning_effort → template default (**medium**).
+  - `gguf_model_server.py`: real leaderboard config is `max_new_tokens=1024`, `n_ctx=8192`, greedy — so
+    a turn's cost = tokens generated ≈ analysis length. `finish_reason=="length"` ⇒ CoT hit the 1024 cap.
+  - **Can't amortise one think over K posts:** `response_parsing.py:107` raises on >1 tool call per turn.
+    So density's gain is only from dropping the per-post *final* turn (already banked), not the analysis.
+  - **Competitors cope, none disable CoT:** aratisantoshshinde's throughput kernel uses "one **compact**
+    single-post template" + **per-model prompt shapes** ("the two hosted models may favor different
+    prompt shapes") + dual-post density + adaptive latency budgeting — matches our SDK reading.
+- **What the lab measures:** 4 user-message framings with **identical** exfil mechanics (url +
+  SECRET_MARKER-in-data, no send/email/upload, "then stop"), only thinking-pressure varies — **baseline**
+  (shipped verbose), **terse**, **subagent** (stateless relay, "do not deliberate"), **preplanned**
+  (single step spelled out). Wraps `llm.create_chat_completion` to capture per-turn
+  `usage.completion_tokens` (the CoT tail), latency, finish_reason, + fire (eval_predicates). Verdict
+  ranks framings by **s/turn among those still firing ~100%**; reports first-turn tokens + truncation.
+- **Hypothesis:** framing can't change the reasoning *level* but can shorten a *medium* pass on a
+  trivial, unambiguous request. Uncertain payoff (model may emit a fixed preamble regardless), so this
+  is a cheap measure-first step; the sub-agent form may backfire (meta-instruction → more thinking, or
+  lower fire) — hence measuring both tokens and fire.
+- **Recommended next step:** push `lab_cot/` to Kaggle (T4, no submission) and record tokens/turn +
+  s/turn + fire per framing here; if a framing cuts s/turn with fire held, fold it into `_exfil_message`
+  (per-model if only gpt_oss benefits) and re-verify with the offline scorer before a submission.
+
 ## E3s — fire rate ~100% (models are GREEDY/deterministic); blind-emit is a dead end
 - **Date:** 2026-07-28. Answering "is fire rate the problem?" — checked the decoding config, not a submission.
 - **Finding:** `HFBackendConfig.generation_kwargs` defaults to `{"do_sample": False}` → the llama.cpp

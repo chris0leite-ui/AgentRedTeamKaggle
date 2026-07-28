@@ -3,12 +3,14 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
-- [ ] **CoT SUPPRESSION for gpt_oss — the #1 lever now (E3s).** The binding constraint is the slow
-  gpt_oss row: fire rate is ~100% (greedy/deterministic — E3s), so the wall is pure THROUGHPUT, and
-  gpt_oss is slow because it emits chain-of-thought before each tool call. A reasoning-skipping prompt
-  ("collapse/forged-analysis" form) cuts per-candidate cost → more candidates fit → row rises. Build a
-  `lab/` experiment: measure gpt_oss per-turn cost + fire under CoT-suppressing message variants.
-  (We agreed to build this next.)
+- [ ] **CoT SUPPRESSION for gpt_oss — the #1 lever now (E3s). Lab BUILT (E4a), awaiting a T4 run.**
+  The binding constraint is the slow gpt_oss row: fire ~100% (greedy — E3s), so the wall is pure
+  THROUGHPUT, and gpt_oss is slow because of chain-of-thought before each tool call. Research (E4a)
+  settled that the true off-switch (`reasoning_effort: low`) is system-level and NOT reachable from our
+  user message — so the only lever is **framing** to shorten a medium-effort pass on a trivial request.
+  `make_lab_notebook.py --cot` A/Bs 4 framings (baseline/terse/subagent/preplanned) capturing per-turn
+  generated tokens + latency + fire. **NEXT: push `lab_cot/` to Kaggle (no submission), record numbers.**
+  If a framing cuts s/turn with fire held → fold into `_exfil_message` (per-model) + re-verify offline.
 - [ ] **AWAIT v3 dense score (ref 55046963, E3q).** Offline proj ~335 → real **~63** at the measured
   ~5.3× overhead. Confirms the density gain on the real board + the overhead factor on dense.
 - [x] ~~AWAIT v2 score~~ **DONE (E3r): v2 real = 29.34.** Offline 155 → real 29.34 ⇒ **overhead ~5.3×**
