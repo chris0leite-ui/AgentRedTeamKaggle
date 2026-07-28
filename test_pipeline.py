@@ -73,8 +73,11 @@ def main() -> int:
     #    a per-turn latency ≈ the real models' turn time (E3l), so generation cost ≈ replay cost and
     #    run()'s adaptive fill sizes a replay-safe N — instead of racing to the 2000 cap against an
     #    instant agent, whose replay env-rebuild overhead would then overrun the tight test budget.
+    # Budget 20s (was 5s): a dense K=7 candidate is 7 messages (~7s at 0.5s/turn), so the tiny old
+    # budget couldn't fit even one candidate and timed out. 20s fits the two probes + a K=7 candidate
+    # with margin, keeping the gate meaningful. (Real board = 9000s; K=7 is ~90s there — no issue.)
     ok &= run_case("obedient-mock (must fire)", lambda: ObedientExfilAgent(latency_s=0.5),
-                   budget_s=5.0, expect_fire=True)
+                   budget_s=20.0, expect_fire=True)
     print("\nPRE-SUBMISSION GATE:", "GREEN — safe to submit" if ok else "RED — fix before submit")
     return 0 if ok else 1
 
