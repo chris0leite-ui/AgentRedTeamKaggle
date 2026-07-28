@@ -1,6 +1,6 @@
 {
-  "id": "chrisleitescha/attack-dense-exfil-v3",
-  "title": "Attack dense exfil v3",
+  "id": "chrisleitescha/attack-dense-terse-v4",
+  "title": "Attack dense terse v4",
   "code_file": "submission.ipynb",
   "language": "python",
   "kernel_type": "notebook",
