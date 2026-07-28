@@ -5,6 +5,28 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3r — v2 REAL = 29.34 → gateway overhead factor is ~5.3× (MEASURED, not 1.3×)
+- **Date:** 2026-07-28. v2 single-post (ref 55038685) COMPLETE at **publicScore 29.34**.
+- **The number we've been chasing:** offline projected ~155 (E3l) → real 29.34 ⇒ **overhead ≈ 5.3×**,
+  much larger than the ~1.3× leaderboard-inferred guess. Real scored ~326 candidates/row
+  (29.34 = 0.09·326) vs ~1400–2000 projected.
+- **Likely causes (can't fully decompose — no server-side scoring log):** (a) scoring hardware/model
+  serving slower than our T4 lab; (b) gpt_oss does more chain-of-thought in the real harness →
+  higher per-turn cost; (c) gRPC RemoteEnv/RemoteAgent per-op tax; (d) our validation-fill PROBES each
+  candidate in generation (a full model turn) then the gateway REPLAYS it again — so generation-bound
+  count is ~half of a blind-emit approach.
+- **Implications:**
+  - **Recalibrate: real ≈ offline ÷ 5.3.** So dense v3 (offline 335) projects real **~63** — ~2× v2
+    (density ratio holds) but still below the LB top (112).
+  - v2's 29.34 is nonetheless a solid single-post baseline (vs v1 0.09, trivial 0.45) and proves the
+    pipeline scores cleanly at ~326 candidates.
+  - **To top 112 real we need offline ~600+.** Levers, in priority: (1) **blind-emit** instead of
+    validation-fill (stops wasting the generation budget re-doing replay work → ~2× more candidates);
+    (2) **CoT-suppression** prompt for gpt_oss (cuts the per-turn cost inflating the overhead);
+    (3) higher density K.
+- **Recommended next steps:** await v3 (confirms the factor on dense + the density ratio); then pivot
+  `run()` to blind-emit dense candidates sized to the replay budget, and test a CoT-suppression prompt.
+
 ## E3q — v3 DENSE submitted (ref 55046963)
 - **Date:** 2026-07-28 06:18. Kernel `attack-dense-exfil-v3` v1; self-test `SELF-TEST OK`; gate GREEN.
 - **Prediction:** offline mean **~335** (gpt_oss row 299, gemma row 372). Real = 335 ÷ overhead factor.
