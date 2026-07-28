@@ -1,0 +1,16 @@
+{
+  "id": "chrisleitescha/attack-density-smoke",
+  "title": "Attack density smoke",
+  "code_file": "lab.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "machine_shape": "NvidiaTeslaT4",
+  "enable_internet": true,
+  "competition_sources": [
+    "ai-agent-security-multi-step-tool-attacks"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": []
+}
