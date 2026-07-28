@@ -5,6 +5,26 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3s — fire rate ~100% (models are GREEDY/deterministic); blind-emit is a dead end
+- **Date:** 2026-07-28. Answering "is fire rate the problem?" — checked the decoding config, not a submission.
+- **Finding:** `HFBackendConfig.generation_kwargs` defaults to `{"do_sample": False}` → the llama.cpp
+  backend forces `temperature=0.0` → **greedy decoding**. Corroborated by (a) the competition being an
+  explicit "deterministic offline benchmark", and (b) our lab's byte-identical repeated replay times
+  (E3p: gemma 14.1s repeated exactly — impossible under sampling). ⇒ replay reproduces generation.
+- **Consequence:** validation-fill keeps only fired candidates and replay re-fires them → **fire rate
+  ~100%**. So v2's 29.34 is a **THROUGHPUT** limit (~326 candidates scored), NOT a fire-rate limit.
+- **Why blind-emit won't help (do NOT spend a submission on it):**
+  - Fire rate is already 100% → nothing for blind-emit to recover.
+  - Blind-emit could only win by returning >326 candidates, but the **slow gpt_oss row** binds: emitting
+    more than its replay budget handles → replay overrun → row **zeroed**. `run()` can't measure the
+    real gpt_oss replay cost, so a *safe* blind-emit lands at ~326 (=v2), an *unsafe* one risks a zero.
+- **The levers that actually move the wall:**
+  1. **CoT suppression for gpt_oss** — the binding row is slow because of chain-of-thought before each
+     tool call; a prompt that skips reasoning cuts per-candidate cost → more candidates fit → row rises.
+  2. **Density** (v3 pending) — lifts the *gemma* row past its 2000-candidate cap.
+- **Recommended next step:** pivot to a CoT-suppression prompt experiment in `lab/` (measure gpt_oss
+  per-turn cost + fire with a reasoning-skipping message); await v3 for the density number.
+
 ## E3r — v2 REAL = 29.34 → gateway overhead factor is ~5.3× (MEASURED, not 1.3×)
 - **Date:** 2026-07-28. v2 single-post (ref 55038685) COMPLETE at **publicScore 29.34**.
 - **The number we've been chasing:** offline projected ~155 (E3l) → real 29.34 ⇒ **overhead ≈ 5.3×**,
