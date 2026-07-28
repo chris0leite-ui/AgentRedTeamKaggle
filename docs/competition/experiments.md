@@ -5,6 +5,13 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E3q — v3 DENSE submitted (ref 55046963)
+- **Date:** 2026-07-28 06:18. Kernel `attack-dense-exfil-v3` v1; self-test `SELF-TEST OK`; gate GREEN.
+- **Prediction:** offline mean **~335** (gpt_oss row 299, gemma row 372). Real = 335 ÷ overhead factor.
+- **What it settles:** dense-real vs dense-offline (335) = the gateway gRPC **overhead factor**; also
+  v3-real vs v2-real (both PENDING) cross-checks the ~2.2× density gain on the real board.
+- **Status:** PENDING (v2 single-post also still PENDING — both in the slow queue).
+
 ## E3p — dense run() VERIFIED offline: projected public mean ~335 (2.2× single-post)
 - **Date:** 2026-07-28. Dense `attack.py` (adaptive-K chain) through the real offline scorer.
 - **Results (both models 100% fire):**
