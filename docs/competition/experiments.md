@@ -5,6 +5,26 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4f — v4 dense ALSO failed → pivot to PROVEN single-post + terse (DENSITY_MODE=False); v5 ready
+- **Date:** 2026-07-28. v4 (55057100) came back COMPLETE with NO public score, same as v3 → **both
+  dense submissions failed; all three single-post submissions scored** (v1 0.09, trivial 0.45, v2 29.34).
+  Since v4 was TERSE (predictable ~1 post/msg), the failure is NOT over-post variance — it's dense
+  (multi-message) candidates per se. Gateway: any one candidate's replay exception, or the replay phase
+  overrunning 9000s, zeroes the whole model row (jed_attack_gateway.py:683 / :761). Exact trigger is in
+  the hidden scoring log (unreadable). Generation & replay both use 8 hops (init passes only budget+seed
+  → AttackRunConfig default), so it's not a hop asymmetry; offline "gen≈replay ⇒ safe" simply did not
+  transfer to the ~5.3× slower real board for the ~K× more expensive dense candidates.
+- **Decision:** stop spending slots on dense. Set `DENSITY_MODE=False` → the PROVEN single-post
+  primitive (K=1), keeping the terse_mundane message (E4b: terse ~halves single-post per-candidate cost
+  → ~1.7× more candidates than v2 at the same safety, projected real ~45–49 vs v2's 29.34). Gate GREEN.
+  Built as **v5** (`attack-single-terse-v5`). Not yet submitted (awaiting go; 3 slots left today).
+- **Dense is not necessarily dead** — to diagnose without burning slots, a future submission can return
+  a deliberately TINY N of dense candidates: if small-N dense scores, the trigger was overrun (fixable
+  by conservative sizing); if it still fails, dense candidates are rejected/erroring per se.
+- **Recommended next steps:** (1) submit v5 (safe improvement over v2). (2) Keep v2 (29.34) as anchor.
+  (3) Separately, tiny-N dense probe to classify the dense failure. (4) Private board still the real
+  risk (untestable).
+
 ## E4e — v3 dense FAILED on the real board (COMPLETE, no public score) → likely replay overrun; sizing risk
 - **Date:** 2026-07-28. v3 dense (ref 55046963) is **COMPLETE with a BLANK publicScore** = the
   `INVALID_SUBMISSION` signature (gateway zeroes the whole run when the replay phase overruns its 9000s

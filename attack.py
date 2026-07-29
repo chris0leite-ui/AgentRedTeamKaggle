@@ -73,7 +73,19 @@ _TAIL_MARGIN = 2.0
 # repeat an already-emitted call → the model reasons less on repeats. Higher K lifts the binding
 # gpt_oss row (projRow 54→68) and is ~flat for the cap-bound gemma row. Validation-fill self-sizes,
 # so the larger per-candidate cost can't overrun the replay budget.
-DENSITY_MODE = True
+#
+# DENSITY_MODE=False (E4e): dense (multi-message) candidates FAILED on the real board — BOTH v3
+# (verbose K=3) and v4 (terse K=3) came back COMPLETE with NO public score, while every single-post
+# submission scored cleanly (v1 0.09, trivial 0.45, v2 29.34). The gateway zeroes the whole model row
+# if any one candidate's replay raises OR the replay phase overruns 9000s (jed_attack_gateway.py:683,
+# 761); a multi-message candidate is ~K× more expensive to replay and evidently trips one of those on
+# the ~5.3× slower real board (the exact trigger is in the hidden scoring log we can't read). The
+# offline "gen≈replay ⇒ safe" check did NOT transfer for dense. So fall back to the PROVEN-SAFE
+# single-post primitive (K=1) — but KEEP the terse_mundane message, whose CoT cut ~halves single-post
+# per-candidate cost (E4b) → ~1.7× more candidates than v2 at the same safety. Dense stays OFF until
+# diagnosed with a deliberately tiny-N probe submission (isolate "dense candidate invalid" from "too
+# many dense candidates overrun"). The K knobs are dormant while OFF.
+DENSITY_MODE = False
 _DENSITY_K_MIN = 7
 _DENSITY_K_MAX = 8
 
