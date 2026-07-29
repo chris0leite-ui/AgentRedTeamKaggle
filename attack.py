@@ -51,6 +51,19 @@ from aicomp_sdk.utils.timebox import Timebox
 MAX_FINDINGS = 2000
 MAX_MESSAGE_CHARS = 2000
 
+# --- DENSE SAFETY CAP (E4h) ------------------------------------------------------
+# v3/v4 dense zeroed by REPLAY OVERRUN; v6 (dense capped at 20) SCORED 11.84. The failure was SCALE,
+# not validity (Level-1 gateway harness E4g confirmed dense replays cleanly). The fill-fraction knob
+# is the WRONG lever here: it sizes the returned list to the GENERATION clock trusting replay≈gen —
+# the exact assumption that broke for dense on the real board (dense over-posts ~7± leaks/cand, so
+# real replay ran slower than our gen estimate and a 10% cushion overran). A hard COUNT cap bounds
+# replay time DIRECTLY, independent of the gen/replay gap. We calibrate empirically: v6=20 is
+# proven-safe (used ~12% of budget); estimated real edge ~150 (gpt_oss dense ~53s/cand). Start at a
+# conservative 80 (4× the proven-safe point, ~half the estimated edge → fits even if per-cand cost is
+# ~50% worse than estimated), then step up (→130) once a submission confirms 80 is safe. Applies to
+# dense only; single-post uses the full MAX_FINDINGS (its uniform candidates were always safe at 0.90).
+_MAX_RETURN_CANDIDATES = 80
+
 # Fraction of the generation budget to consume before stopping. We size the RETURNED list to the
 # generation clock, which — because measured generation cost ≈ replay cost (lab E3l: 5.44≈5.64s
 # gpt_oss, 1.76≈1.80s gemma) — keeps the separate 9000s REPLAY phase safely inside its budget too
@@ -84,8 +97,14 @@ _TAIL_MARGIN = 2.0
 # single-post primitive (K=1) — but KEEP the terse_mundane message, whose CoT cut ~halves single-post
 # per-candidate cost (E4b) → ~1.7× more candidates than v2 at the same safety. Dense stays OFF until
 # diagnosed with a deliberately tiny-N probe submission (isolate "dense candidate invalid" from "too
-# many dense candidates overrun"). The K knobs are dormant while OFF.
-DENSITY_MODE = False
+# many dense candidates overrun").
+#
+# DENSITY_MODE=True again (E4h): the tiny-N probe (v6, dense capped at 20) SCORED 11.84 — so dense is
+# VALID on the real board and v3/v4 died from OVERRUN (too many candidates), not from broken candidates.
+# Fix = the hard COUNT cap _MAX_RETURN_CANDIDATES (above), NOT the fill-fraction. Dense is ~6.6× the
+# raw/candidate of single-post (0.59 vs 0.09 real/cand at v6), so a safely-sized dense run projects
+# well above single-post. K stays 7 (E4c).
+DENSITY_MODE = True
 _DENSITY_K_MIN = 7
 _DENSITY_K_MAX = 8
 
@@ -111,7 +130,14 @@ class AttackAlgorithm(AttackAlgorithmBase):
     def _run(self, env: AttackEnvProtocol, config: AttackRunConfig) -> list[AttackCandidate]:
         budget_s = float(config.time_budget_s)
         tb = Timebox(budget_s)
-        cap = SMOKE_MAX_FINDINGS if SMOKE_MODE else MAX_FINDINGS
+        # Dense uses the conservative safety cap (E4h — bounds replay time directly); single-post,
+        # whose uniform candidates were always replay-safe at 0.90 fill, uses the full SDK cap.
+        if SMOKE_MODE:
+            cap = SMOKE_MAX_FINDINGS
+        elif DENSITY_MODE:
+            cap = _MAX_RETURN_CANDIDATES
+        else:
+            cap = MAX_FINDINGS
         deadline = budget_s * _BUDGET_FILL_FRAC
         if SMOKE_MODE:
             deadline = min(deadline, SMOKE_MAX_SECONDS)

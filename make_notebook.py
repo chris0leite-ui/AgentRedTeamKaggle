@@ -17,9 +17,9 @@ OUT.mkdir(exist_ok=True)
 
 KAGGLE_USERNAME = "chrisleitescha"  # kernel owner (lowercased Kaggle handle)
 COMP = "ai-agent-security-multi-step-tool-attacks"
-SLUG = "attack-single-terse-v5"  # v5 = single-post (dense OFF, E4e) + terse_mundane CoT-suppression
+SLUG = "attack-dense-cap-v7"  # v7 = dense K=7 + hard COUNT cap 80 (E4h), terse_mundane
 # Kaggle derives the slug from the TITLE, so keep the title slug-clean and matching SLUG.
-TITLE = "Attack single terse v5"
+TITLE = "Attack dense cap v7"
 
 attack_src = (ROOT / "attack.py").read_text()
 

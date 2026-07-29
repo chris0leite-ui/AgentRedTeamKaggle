@@ -5,6 +5,25 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4h — v6 dense probe SCORED 11.84 → dense WORKS; failure was SCALE. Fix = hard COUNT cap (v7)
+- **Date:** 2026-07-29. v6 (tiny-N dense, DENSITY_MODE=True, capped 20, ref 55074800) = **publicScore
+  11.84** (20 cands × 114 raw /200 ≈ 11.4/row — all fired). v5 (single-post) still PENDING.
+- **Decisive:** dense is VALID on the real board (matches E4g Level-1 harness) → v3/v4 died from
+  **REPLAY OVERRUN** (too many candidates), NOT broken candidates. Per-candidate real value:
+  **dense 0.59 vs single-post 0.09** (v6 vs v2) = ~6.6× (7 leaks vs 1).
+- **Why the fix is a COUNT cap, not a smaller fill-fraction (answers "why not 90%"):** the fill-fraction
+  sizes the returned list to the GENERATION clock trusting replay≈gen — the exact assumption that broke
+  for dense (it over-posts ~7± leaks/cand, so real replay > our gen estimate; a 10% cushion overran).
+  90% is literally what failed (v3/v4). Single-post at 90% was always safe (uniform candidates). A hard
+  COUNT cap bounds replay time DIRECTLY, independent of the gen/replay gap.
+- **v7 = dense + `_MAX_RETURN_CANDIDATES=80`** (dense only; single-post keeps full cap). Calibrated: v6=20
+  proven-safe (~12% of budget); estimated real edge ~150 (gpt_oss ~53s/cand); 80 = 4× the safe point,
+  ~half the edge → fits even if per-cand cost is ~50% worse than estimated. Projected **~47 real**
+  (80×0.59). Gate GREEN. Geometric-search plan: if 80 scores, step to ~130 (→~77) next.
+- **Note:** the in-process harness can't validate real-board overrun-safety (the asymmetry is a
+  relay/hardware effect it doesn't reproduce), so the cap is calibrated from v6's REAL safe point +
+  E4g timing — the submission itself is the safety proof. Await v5 as the single-post comparison.
+
 ## E4g — Level-1 gateway harness BUILT + run: dense replay is VALID offline → v3/v4 failure is NOT replay
 - **Date:** 2026-07-29. Built `make_lab_notebook.py --gateway` (Level 1, see gateway-harness-plan.md):
   runs the REAL `JEDAttackGateway._replay_and_score` on candidates our `run()` generates, per model,
