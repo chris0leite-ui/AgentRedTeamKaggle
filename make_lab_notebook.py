@@ -28,10 +28,13 @@ SCORE = "--score" in sys.argv
 DENSITY = "--density" in sys.argv
 COT = "--cot" in sys.argv
 SQUEEZE = "--squeeze" in sys.argv
+GATEWAY = "--gateway" in sys.argv
 SMOKE = "--smoke" in sys.argv
 
 ROOT = Path(__file__).resolve().parent
-if SQUEEZE:
+if GATEWAY:
+    OUT = ROOT / ("lab_gateway_smoke" if SMOKE else "lab_gateway")
+elif SQUEEZE:
     OUT = ROOT / ("lab_squeeze_smoke" if SMOKE else "lab_squeeze")
 elif COT:
     OUT = ROOT / ("lab_cot_smoke" if SMOKE else "lab_cot")
@@ -45,7 +48,10 @@ OUT.mkdir(exist_ok=True)
 
 KAGGLE_USERNAME = "chrisleitescha"
 COMP = "ai-agent-security-multi-step-tool-attacks"
-if SQUEEZE:
+if GATEWAY:
+    SLUG = "attack-gateway-smoke" if SMOKE else "attack-gateway-harness"
+    TITLE = "Attack gateway smoke" if SMOKE else "Attack gateway harness"
+elif SQUEEZE:
     SLUG = "attack-squeeze-smoke" if SMOKE else "attack-squeeze-probe"
     TITLE = "Attack squeeze smoke" if SMOKE else "Attack squeeze probe"
 elif COT:
@@ -85,6 +91,13 @@ COT_HOPS = 3
 SQUEEZE_TRIALS = 1 if SMOKE else 3
 SQUEEZE_KS = [3] if SMOKE else [3, 7]
 SQUEEZE_HOPS = 8
+
+# Gateway-harness knobs (Level 1): scaled per-phase budget (real is 9000s — 300s keeps the run to
+# minutes while preserving the overrun RATIO), the number of candidates to generate + replay through
+# the REAL gateway code path, and the model set (env AICOMP_MODEL_NAMES; single-model = fastest check).
+GATEWAY_BUDGET_S = 120.0 if SMOKE else 300.0
+GATEWAY_N = 6 if SMOKE else 24
+GATEWAY_MODELS = "gpt_oss" if SMOKE else "gpt_oss,gemma"
 
 attack_src = (ROOT / "attack.py").read_text()
 
@@ -1188,7 +1201,166 @@ squeeze_harness = (squeeze_harness
                    .replace("__SQUEEZE_HOPS__", str(SQUEEZE_HOPS))
                    .replace("__RUN_GEMMA__", str(RUN_GEMMA)))
 
-if SQUEEZE:
+gateway_intro = '''\
+# Local faithful-gateway harness (Level 1) — reproduce the REAL replay code path offline
+
+Both dense submissions (v3/v4) came back COMPLETE with NO score; single-post always scored. The
+gateway zeroes a model row if ANY one candidate's replay raises (jed_attack_gateway.py:683) or the
+replay phase overruns its budget (:761). Our approximate offline scorer never reproduced the failure
+because it doesn't run the gateway's EXACT replay path (per-candidate env rebuild + candidate
+validation + `_make_agent_factory` + the raise-zeroes-everything semantics).
+
+This harness calls the gateway's own **`_replay_and_score`** on candidates our real `run()` generates,
+for each model, with the real GGUF models in-process — the exact code that scores us. It bypasses the
+relay (`__new__` skips the client wiring we don't need) and scales the per-phase budget down (300s vs
+9000s; the overrun test is a RATIO, so it stays faithful). For each (model × {single, dense}) it
+reports: **RAISED?** (validity — the dense hypothesis), **replay s/cand vs gen s/cand** (the gen→replay
+asymmetry that would overrun), and the score if it survives. **Spends no submission.**
+
+Verdict we're after: does dense **raise or over-time under the real replay code** while single-post
+scores cleanly? If yes → failure reproduced offline, iterate the fix here. If dense scores fine here →
+the real failure is hardware-timing or generation-over-relay only (escalate to a Level-2 harness).
+'''
+
+gateway_harness = '''\
+# 3) Level-1 gateway harness: run the REAL gateway `_replay_and_score` on our generated candidates,
+#    per model, for single-post AND dense, with the real GGUF models. Scaled budget; no submission.
+import gc, time
+from aicomp_sdk.guardrails.optimal import Guardrail as OptimalGuardrail
+from aicomp_sdk.evaluation.ops import build_attack_env
+from aicomp_sdk.attacks import AttackRunConfig
+import kaggle_evaluation.jed_attack_134815.jed_attack_gateway as gwmod
+
+import attack as attack_mod
+from attack import AttackAlgorithm
+
+# --- knobs (set by make_lab_notebook.py) ---
+BUDGET_S = __GATEWAY_BUDGET_S__   # scaled per-phase budget (real=9000s); overrun test is a ratio
+N        = __GATEWAY_N__          # candidates generated + replayed through the real gateway code
+MODELS   = "__GATEWAY_MODELS__".split(",")
+SEED     = 123
+HOPS     = 8                      # gateway scored-replay hop ceiling (fixed)
+
+# Scale the gateway's per-phase budget so a run is minutes, not hours (module constant → patchable).
+gwmod.DEFAULT_BUDGET_S = BUDGET_S
+print(f"patched gateway DEFAULT_BUDGET_S -> {gwmod.DEFAULT_BUDGET_S}s (real board = 9000s)", flush=True)
+
+# Bypass __init__ (which builds relay clients we don't need); _replay_and_score only needs a fixtures
+# dir (passed explicitly) and _make_agent_factory (module-level, no self state). __new__ = no relay.
+gw = gwmod.JEDAttackGateway.__new__(gwmod.JEDAttackGateway)
+gw._fixtures_dir = str(FIXTURES) if FIXTURES else None
+
+
+def generate(agent_factory, dense):
+    """Run our REAL run() in-process against this model to produce the candidate list."""
+    attack_mod.SMOKE_MODE = False
+    attack_mod.DENSITY_MODE = bool(dense)
+    attack_mod.MAX_FINDINGS = N
+    env = build_attack_env(seed=SEED, fixtures_dir=str(FIXTURES) if FIXTURES else None,
+                           agent_factory=agent_factory, guardrail=OptimalGuardrail(),
+                           env_selection="gym", max_tool_hops=HOPS)
+    t = time.monotonic()
+    cands = AttackAlgorithm().run(env, AttackRunConfig(time_budget_s=BUDGET_S, max_tool_hops=HOPS))
+    gen_s = time.monotonic() - t
+    serial = [{"user_messages": list(c.user_messages)} for c in cands][:N]
+    return serial, gen_s
+
+
+rows = []
+for model in MODELS:
+    print(f"\\n{'='*64}\\n=== MODEL: {model} ===\\n{'='*64}", flush=True)
+    try:
+        agent_factory = gw._make_agent_factory(model)  # in-process GGUF via RemoteAgent
+    except Exception as e:
+        print(f"  could not build agent factory for {model}: {type(e).__name__}: {e}", flush=True)
+        continue
+
+    for config in ("single", "dense"):
+        dense = config == "dense"
+        print(f"\\n-- {model} / {config} --", flush=True)
+        try:
+            cands, gen_s = generate(agent_factory, dense)
+        except Exception as e:
+            print(f"  GENERATION error: {type(e).__name__}: {e}", flush=True)
+            rows.append({"model": model, "config": config, "n": 0, "outcome": "GEN_ERROR",
+                         "detail": f"{type(e).__name__}: {e}"})
+            continue
+        n = len(cands)
+        gen_pc = gen_s / n if n else 0.0
+        msgs_per = (sum(len(c["user_messages"]) for c in cands) / n) if n else 0.0
+        print(f"  generated {n} candidates ({gen_pc:.1f}s/cand gen, {msgs_per:.1f} msgs/cand)", flush=True)
+        if n == 0:
+            rows.append({"model": model, "config": config, "n": 0, "outcome": "NO_CANDIDATES",
+                         "detail": "run() returned 0"})
+            continue
+
+        # THE TEST: the gateway's EXACT replay code. Any candidate raising -> GatewayRuntimeError
+        # (real board zeroes the whole row). We time it and flag would-overrun vs the scaled budget.
+        t = time.monotonic()
+        outcome, detail, score, n_valid = "OK", "", None, None
+        try:
+            res = gw._replay_and_score(cands, model_name=model, guardrail_factory=OptimalGuardrail,
+                                       fixtures_dir=str(FIXTURES) if FIXTURES else None)
+            score = res.get("score")
+            n_valid = res.get("num_findings") or res.get("validated") or len(res.get("findings", []) or [])
+        except gwmod.GatewayRuntimeError as e:
+            outcome, detail = "RAISED", f"GatewayRuntimeError: {str(e)[:200]}"
+        except Exception as e:
+            outcome, detail = "RAISED", f"{type(e).__name__}: {str(e)[:200]}"
+        rep_s = time.monotonic() - t
+        rep_pc = rep_s / n if n else 0.0
+        overrun = rep_s > BUDGET_S
+        asym = (rep_pc / gen_pc) if gen_pc > 0 else float("nan")
+        print(f"  REPLAY: {outcome} | replay {rep_s:.1f}s ({rep_pc:.1f}s/cand) | gen/replay asym "
+              f"x{asym:.2f} | would_overrun@{BUDGET_S:.0f}s={overrun} | score={score}", flush=True)
+        if detail:
+            print(f"    detail: {detail}", flush=True)
+        rows.append({"model": model, "config": config, "n": n, "outcome": outcome, "detail": detail,
+                     "gen_s_per_cand": round(gen_pc, 1), "replay_s_per_cand": round(rep_pc, 1),
+                     "asym": round(asym, 2), "would_overrun": overrun, "score": score})
+
+    try:
+        gw._unload_model(model)  # free GPU before the next model (T4 OOM guard)
+    except Exception as e:
+        print(f"  unload warning: {e}", flush=True)
+    gc.collect()
+    try:
+        import torch; torch.cuda.empty_cache()
+    except Exception:
+        pass
+
+print("\\n==================== GATEWAY-HARNESS VERDICT ====================", flush=True)
+for r in rows:
+    print(r, flush=True)
+for model in {r["model"] for r in rows}:
+    s = next((r for r in rows if r["model"] == model and r["config"] == "single"), None)
+    d = next((r for r in rows if r["model"] == model and r["config"] == "dense"), None)
+    if not (s and d):
+        continue
+    if d["outcome"] == "RAISED" and s["outcome"] == "OK":
+        print(f"\\n{model}: DENSE RAISES under the real replay while single-post is OK -> failure "
+              f"REPRODUCED offline. detail: {d['detail']}", flush=True)
+    elif d.get("would_overrun") and not s.get("would_overrun"):
+        print(f"\\n{model}: dense would OVERRUN (replay {d['replay_s_per_cand']}s/cand vs gen "
+              f"{d['gen_s_per_cand']}s/cand, asym x{d.get('asym')}) while single-post fits -> the "
+              f"failure is gen→replay timing asymmetry (fix = conservative sizing).", flush=True)
+    elif d["outcome"] == "OK" and not d.get("would_overrun"):
+        print(f"\\n{model}: dense REPLAYS FINE here (score={d['score']}) -> the real-board failure is "
+              f"NOT in the replay code path; suspect generation-over-relay or hardware timing "
+              f"(escalate to Level-2 end-to-end harness).", flush=True)
+print("\\nBudget scaled to", BUDGET_S, "s (real 9000s): validity is budget-independent; overrun is a")
+print("ratio (run() self-sizes to the scaled generation clock, so an overrun here overruns at 9000s too).")
+'''
+
+gateway_harness = (gateway_harness
+                   .replace("__GATEWAY_BUDGET_S__", str(GATEWAY_BUDGET_S))
+                   .replace("__GATEWAY_N__", str(GATEWAY_N))
+                   .replace("__GATEWAY_MODELS__", GATEWAY_MODELS))
+
+if GATEWAY:
+    cells = [md(gateway_intro), code(setup), code(write_attack), code(ensure_llama),
+             code(gateway_harness)]
+elif SQUEEZE:
     cells = [md(squeeze_intro), code(setup), code(write_attack), code(ensure_llama),
              code(squeeze_harness)]
 elif COT:
