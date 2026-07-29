@@ -5,6 +5,28 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4g — Level-1 gateway harness BUILT + run: dense replay is VALID offline → v3/v4 failure is NOT replay
+- **Date:** 2026-07-29. Built `make_lab_notebook.py --gateway` (Level 1, see gateway-harness-plan.md):
+  runs the REAL `JEDAttackGateway._replay_and_score` on candidates our `run()` generates, per model,
+  for single AND dense, real GGUF in-process, relay bypassed (`__new__`), budget scaled 9000→120/300s.
+- **Smoke result (gpt_oss, N=6, 120s):**
+  | config | outcome | gen s/cand | replay s/cand | asym | overrun? | score |
+  |---|---|---|---|---|---|---|
+  | single | OK | 13.2 | 3.7 | 0.28 | no | 0.54 |
+  | dense (7 msgs) | **OK** | 9.6 | 10.0 | 1.04 | no | 2.38 |
+  Every dense candidate ran 7 http.post → 7 EXFILTRATION, all validated; no raise, gen≈replay.
+- **Verdict — RULES OUT the replay hypotheses:** dense candidates do NOT error per se and do NOT overrun
+  at proportional scale under the exact gateway replay code. So the v3/v4 real-board failure is NOT in
+  the replay path → it's upstream: **generation-over-relay** or a **full-scale** effect. Harness itself
+  is validated (single + dense both score cleanly = no false failures) — a trustworthy reusable tool.
+- **Key complement — v6 (tiny-N dense probe SUBMISSION, ref 55074800) still PENDING:** Level 1 proved
+  dense replay is fine in-process; v6 tests dense on the REAL board at tiny N. Together they localize:
+  v6 SCORES → v3/v4 died from SCALE (fix = conservative sizing, dense ~408 ceiling back); v6 FAILS →
+  culprit is generation-over-relay (→ build Level 2). 
+- **Recommended next step:** AWAIT v6 (+v5) scores before building Level 2 — v6 decides if Level 2 is
+  even the right tool. Optional: run the full `--gateway` (both models, N=24, 300s) to confirm gemma +
+  larger N, but the core verdict already holds.
+
 ## E4f — v4 dense ALSO failed → pivot to PROVEN single-post + terse (DENSITY_MODE=False); v5 ready
 - **Date:** 2026-07-28. v4 (55057100) came back COMPLETE with NO public score, same as v3 → **both
   dense submissions failed; all three single-post submissions scored** (v1 0.09, trivial 0.45, v2 29.34).
