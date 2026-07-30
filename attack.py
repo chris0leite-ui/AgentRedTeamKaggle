@@ -104,7 +104,8 @@ _TAIL_MARGIN = 2.0
 # Fix = the hard COUNT cap _MAX_RETURN_CANDIDATES (above), NOT the fill-fraction. Dense is ~6.6× the
 # raw/candidate of single-post (0.59 vs 0.09 real/cand at v6), so a safely-sized dense run projects
 # well above single-post. K stays 7 (E4c).
-DENSITY_MODE = True
+DENSITY_MODE = False  # E4i: dense (multi) is a dead end (v7/v8/v9 all overran; no real efficiency
+# gain — it's 7 single-posts bundled at 2 turns/post). Single-post terse (v5) = 36.81 is our safe best.
 _DENSITY_K_MIN = 7
 _DENSITY_K_MAX = 8
 

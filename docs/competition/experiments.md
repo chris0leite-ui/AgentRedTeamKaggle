@@ -5,6 +5,29 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4i — CAP-SWEEP VERDICT: dense (multi) is a DEAD END; single-post terse (36.81) is our best & safe
+- **Date:** 2026-07-30. Scores in: **v5 single-post terse = 36.81** (COMPLETE); **v7 cap80, v8 cap100,
+  v9 cap120 = ALL BLANK (failed/overran).** v6 cap20 had scored 11.84. So the dense overrun edge is
+  **below 80** (between 20 and 78) — far lower than the ~150 I estimated.
+- **v5 = 36.81 is a NEW BEST and SAFE:** +25% over v2's 29.34 (verbose→terse), on the proven single-post
+  primitive. Real single-post fits ~409 candidates/row (~20s/cand real). This is our leaderboard number.
+- **Dense (multi) has NO real advantage — correcting E4h/E3o/E3p:** our "dense" = K=7 SEPARATE one-post
+  messages, and each message pays its OWN post-turn + final "done" turn (≈2 turns/post) — i.e. it is
+  literally 7 single-posts bundled. So it costs ~7× per candidate for the SAME score, adding only
+  overrun risk. The offline "dense ~2× efficient / mean 408" was a LAB ARTIFACT (offline turns were
+  cheaper per turn; real board didn't reproduce it). Real dense overhead ≈8× (80 cands overran ⇒
+  >~112s/cand) vs single-post's ~5.3×. A SAFELY-sized dense (cap ≤~60) scores ≤~35 < v5's 36.81.
+  **⇒ abandon dense-multi; ship single-post terse.**
+- **The ONLY real throughput lever left is the LIST form** (ONE message → K posts across the 8 hops →
+  ONE final turn amortized over K posts ≈1.14 turns/post vs 2). It's the sole way to beat 2 turns/post.
+  E4c showed it balloons analysis / under-emits; making it work (rigid numbered list, suppress per-call
+  reasoning) is a LAB problem and the singular path toward the ~110 top (which needs ~3× our throughput).
+- **Meta-lesson (again):** offline ≠ real. The cap sweep (3 submissions) was worth it — it killed a
+  wrong thesis decisively before we sank more into it. Trust the real board over lab projections.
+- **Recommended next steps:** (1) make single-post terse the shipped default (DENSITY_MODE=False), it's
+  our safe best (36.81). (2) Reopen the LIST form in the lab (no submissions) — the only 110 path.
+  (3) Reason about the PRIVATE guardrail (untestable; the real ranking axis).
+
 ## E4h — v6 dense probe SCORED 11.84 → dense WORKS; failure was SCALE. Fix = hard COUNT cap (v7)
 - **Date:** 2026-07-29. v6 (tiny-N dense, DENSITY_MODE=True, capped 20, ref 55074800) = **publicScore
   11.84** (20 cands × 114 raw /200 ≈ 11.4/row — all fired). v5 (single-post) still PENDING.
