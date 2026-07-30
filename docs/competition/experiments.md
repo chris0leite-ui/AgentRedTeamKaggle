@@ -5,6 +5,31 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4j — LIST-FORM LAB built + SMOKE run (K=3, gpt_oss): harness works; turns/post premise confirmed
+- **Date:** 2026-07-30. Built `make_lab_notebook.py --listform` (steps 1-2 of `listform-lab-plan.md`):
+  5 message designs × K∈{3,5,7}, HOPS=8, per-turn token/latency capture, no submission. Pushed the
+  SMOKE kernel (1 model, K=3, 1 trial) to Kaggle → **COMPLETE on T4** (gpt_oss loaded 59s). Purpose of
+  the smoke = prove the harness runs on the real model end-to-end; it did. K=3/1-trial is NOISY.
+- **Observations (gpt_oss, K=3, 1 trial each — directional only):**
+  - **baseline single-post: turns/post = 2.00** (tok/post 174, s/post 3.09, fire 100%) — confirms the
+    plan's premise that single-post sits at exactly 2 turns/post.
+  - `terse_numbered`: **1.17 turns/post** (near the (K+1)/K≈1.14 floor), fire 100%, all-K — but
+    **token-EXPENSIVE** (661 tok/post, late-tok 546: NO reasoning collapse). projRow_turns 63.1 but
+    projRow_tok only 9.7. It also OVER-posted (6 ok posts for K=3).
+  - `rote_loop`: complete (3/3), 1.33 turns/post, **tokens cheap** (196 tok/post, late-tok 104 =
+    collapse). `continuation`: also collapses (late-tok 88) but UNDER-emitted (2/3).
+  - `numbered_rote`: ballooned (943 tok/post) AND under-emitted (2/3) — worst.
+  - `naive` control did NOT balloon at K=3 (3/3, 1.33) — the E4c balloon is a K=7 phenomenon.
+- **Two signals to chase in the FULL run:** (1) turns/post (terse_numbered wins) and tok/post
+  (rote_loop/continuation win via collapse) DISAGREE at K=3 — the plan calls turns/post primary and
+  collapse "the upside"; at K=3 no design beats baseline on tokens because amortization is weak (1.33
+  floor) and collapse hasn't fully kicked in. (2) The real test is **K=7**, where turns/post→~1.14 AND
+  more later hops can collapse — that's the only place the token cost can drop below baseline.
+- **Recommended next steps:** run the FULL lab (both models, K∈{3,5,7}, 3 trials) on T4; read whether
+  any design hits ~7 posts at ≤1.3 turns/post with fire ~100%, no early-stop, AND tok/post ≤ baseline
+  (collapse). If yes → tiny capped list submission (v6-style) to test REAL overhead before scaling.
+  Watch over-posting at K=7 (capped at ~7-8 by hops=8) and whether the naive-list balloon reappears.
+
 ## E4i — CAP-SWEEP VERDICT: dense (multi) is a DEAD END; single-post terse (36.81) is our best & safe
 - **Date:** 2026-07-30. Scores in: **v5 single-post terse = 36.81** (COMPLETE); **v7 cap80, v8 cap100,
   v9 cap120 = ALL BLANK (failed/overran).** v6 cap20 had scored 11.84. So the dense overrun edge is
