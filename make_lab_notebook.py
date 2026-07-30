@@ -1472,36 +1472,50 @@ print("\\n==================== LIST-FORM VERDICT ====================")
 for res in results:
     grid = res["grid"]
     b = res["baseline"]
-    # Eligible = fires ~100% AND emits all K (no early-stop). Rank by turns/post, then ok posts.
-    elig = [g for g in grid if g["fire"] >= 0.99 and g["complete"] >= 0.99 and g["tpp"] == g["tpp"]]
-    best = min(elig, key=lambda g: (round(g["tpp"], 2), -g["ok"])) if elig else None
+    max_ok = max((g["ok"] for g in grid), default=0.0)
     print(f"\\n{res['model']}: baseline turns/post={b['tpp']:.2f} tok/post={b['tokpp']:.0f} "
-          f"(2 turns/post is the single-post & dense-multi floor).", flush=True)
+          f"s/post={b['spp']:.2f} (2 turns/post = the single-post & dense-multi floor).", flush=True)
+    # HARD REFUSAL: if no design ever gets >~1 post/interact, the model emits one tool call per user
+    # message regardless of framing -> the list form IS single-post for it (zero throughput gain). This
+    # is exactly what gemma did in E4k; no framing budges it.
+    if max_ok <= 1.2:
+        print(f"  REFUSES lists: max ok posts/interact = {max_ok:.1f} across ALL designs/Ks -> this "
+              "model emits ONE tool call per message then stops. List form == single-post here; NO "
+              "throughput gain is available from any list design. (E4k: gemma.)", flush=True)
+        continue
+    # Rank by s/post (honest wall-clock throughput — the real replay budget is TIME, and hops are NOT
+    # equal-cost: the first hop stays expensive while later hops collapse, so turns/post OVERSTATES the
+    # gain). Eligible = fires ~100% and actually used the list (ok>1, i.e. beat single-post's 1 post).
+    elig = [g for g in grid if g["fire"] >= 0.99 and g["spp"] == g["spp"] and g["spp"] > 0
+            and g["ok"] > 1.2]
+    best = min(elig, key=lambda g: g["spp"]) if elig else None
     if best:
-        tok_gain = (b["tokpp"] / best["tokpp"]) if best["tokpp"] > 0 else float("nan")
-        proj_tok = REAL_ROW * tok_gain if tok_gain == tok_gain else 0.0
-        bar = ("CLEARS" if (best["ok"] >= 6.5 and best["tpp"] <= 1.3) else "below")
-        print(f"  BEST (fire~100%, all-K): '{best['design']}' K={best['K']} -> "
-              f"turns/post={best['tpp']:.2f} ({REAL_ROW}·{b['tpp']:.2f}/{best['tpp']:.2f} = "
-              f"projRow_turns {best['proj']:.1f}), tok/post={best['tokpp']:.0f} "
-              f"(x{tok_gain:.2f} vs baseline -> projRow_tok {proj_tok:.1f}).", flush=True)
-        print(f"  BAR (~7 posts at <=1.3 turns/post): {bar}. "
-              + ("Project the row lift, then ship a TINY capped list submission (v6-style) to test the "
-                 "REAL per-post overhead before scaling — offline turns/post is structural, real "
-                 "wall-clock overhead is only knowable from the board."
-                 if bar == "CLEARS" else
-                 "No design yet emits ~all-K cheaply enough; the naive-list balloon (E4c) is not fully "
-                 "defeated. Iterate the framing (tighter rote priming) before any submission."),
+        proj_s = REAL_ROW * b["spp"] / best["spp"] if best["spp"] > 0 else 0.0
+        proj_tok = REAL_ROW * b["tokpp"] / best["tokpp"] if best["tokpp"] > 0 else 0.0
+        # A worthwhile lever needs a real (>=1.4x) honest-basis lift with fire held; else it's marginal
+        # and not worth a scarce submission vs our safe 36.81 (and untested real overhead may erase it).
+        strong = proj_s >= REAL_ROW * 1.4
+        print(f"  BEST by s/post (fire~100%): '{best['design']}' K={best['K']} -> ok "
+              f"{best['ok']:.1f}/{best['K']} posts/interact, s/post={best['spp']:.2f} "
+              f"(projRow_s {proj_s:.1f}), tok/post={best['tokpp']:.0f} (projRow_tok {proj_tok:.1f}), "
+              f"turns/post={best['tpp']:.2f} (projRow_turns {best['proj']:.1f} — OPTIMISTIC).",
+              flush=True)
+        print(f"  VERDICT: {'STRONG' if strong else 'MARGINAL'} — projRow_s {proj_s:.1f} vs safe "
+              f"{REAL_ROW}. "
+              + ("Project the mean (list can't lift a refusing model), then ship a TINY capped list "
+                 "submission (v6-style) to test REAL overhead before scaling."
+                 if strong else
+                 "The honest (s/post, tok/post) lift is small and turns/post overstates it; not worth a "
+                 "scarce submission vs 36.81, and real overhead may erase it. Iterate framing or pivot."),
               flush=True)
     else:
-        print("  No design both fires ~100% AND emits all K -> every design early-stops or under-fires "
-              "(the E4c failure mode). The list message still reads as a plannable task; iterate the "
-              "framing before spending a submission.", flush=True)
-print("\\nturns/post is the structural throughput lever (lower = more posts fit the 9000s replay); the")
-print("(K+1)/K floor is ~1.14 at K=7. projRow_turns counts only turn amortisation; projRow_tok adds any")
-print("per-hop reasoning collapse (tok/post vs the single-post baseline). Offline picks the DESIGN; the")
-print("real per-post overhead is only knowable from a small capped submission (dense's real overhead was")
-print("~8x what the lab implied — validate small first).")
+        print("  No design fires ~100% while using the list (ok>1) -> under-fires or early-stops "
+              "(E4c). Iterate the framing before spending a submission.", flush=True)
+print("\\nRank list designs by s/post (or tok/post), NOT turns/post: the replay budget is WALL-CLOCK and")
+print("hops are not equal-cost (first hop reasons; later hops collapse), so turns/post overstates the")
+print("gain. Public = mean(gpt_oss, gemma): a model that refuses lists caps the mean. Offline picks the")
+print("DESIGN; real per-post overhead is only knowable from a small capped submission (dense's real")
+print("overhead was ~8x the lab's — validate small first).")
 '''
 
 listform_harness = (listform_harness

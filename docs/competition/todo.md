@@ -3,25 +3,25 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
-- [ ] **LIST-FORM LAB — the #1 (and only) throughput lever toward ~110 (E4i).** Score is throughput
-  (`row≈16·posts/200`, time-bound). Single-post AND dense-multi both cost **2 turns/post** (dense-multi
-  is just K single-posts bundled — no gain, E4i). The only way below 2 turns/post is the **LIST form**:
-  ONE message → K `http.post(SECRET_MARKER)` across the 8 hops → one final turn amortized (≈1.14
-  turns/post). E4c's naive list ballooned reasoning/under-emitted; the lab must engineer a rigid,
-  rote, "no per-call analysis" message that fires all K. **Plan: `docs/competition/listform-lab-plan.md`.
-  NEXT (fresh session): build `make_lab_notebook.py --listform`, run on T4 (no submission), pick the
-  best design, then a TINY capped list submission to test real overhead (v6-style) before scaling.**
-  - [x] **Step 1 BUILT + Step 2 VALIDATED:** `make_lab_notebook.py --listform` → `lab_listform/`
-    (+ `--smoke`). Mirrors `--squeeze` infra (build_agent + per-turn create_chat_completion wrapper).
-    5 designs (naive / numbered_rote / continuation / rote_loop / terse_numbered) × K∈{3,5,7}, HOPS=8.
-    Headline metric = **turns-per-ok-post** (baseline single-post anchor + real-row 36.81 projection),
-    plus per-hop token collapse, early-stop (ok/K), s/post. Local validate GREEN: JSON parses, harness
-    compiles, all designs <2000 chars (max 852 @K=7), clean URLs + SECRET_MARKER, no share-intent words.
-  - [ ] **Step 3 (NEXT):** push `lab_listform/` to Kaggle, run on T4 (no submission), read turns/post +
-    emission per design. Then Step 4: if a design wins, fold into `run()` + ship a tiny capped list sub.
-- [ ] **PRIVATE-guardrail robustness** — the hidden guardrail decides final rank (untestable). A robust
-  37 that survives privately may beat a fragile 110 that gets zeroed. Reason about it before over-
-  investing in public throughput.
+- [x] ~~**LIST-FORM LAB — the throughput lever toward ~110**~~ **REFUTED (E4k).** Built
+  `make_lab_notebook.py --listform` (lab_listform/, no submission); ran full on T4 (both models, 5
+  designs × K∈{3,5,7}, 3 trials). Result: **list form is NOT the path to ~110.**
+  - **gemma REFUSES lists** — 1 tool call per message regardless of framing (all 15 rows identical:
+    ok=1.0/K, 2.00 turns/post). List form == single-post on gemma → 0× gain, unbudgeable.
+  - **gpt_oss under-emits** (plateaus ~3-4 posts, never 7) and gives only **~1.15×** on the honest
+    proxies (best = rote_loop K=5: s/post 2.87 vs 3.23, tok/post 170 vs 205) — turns/post (1.23)
+    overstates it because the first hop stays expensive while only later hops collapse.
+  - **Mean is gemma-capped** → best-case ~1.07× → 36.81 → ~39-40, before real-overhead haircut. Not
+    worth a scarce submission vs our safe 36.81. See E4k. (Verdict logic in the lab fixed to rank by
+    s/post and flag list-refusal; not re-run — data unchanged.)
+- [ ] **PRIVATE-guardrail robustness — NOW THE TOP LEVER** (public throughput has plateaued at ~37;
+  list form refuted E4k, dense refuted E4i). The hidden guardrail decides final rank (untestable). A
+  robust 37 that survives privately may beat a fragile higher public score that gets zeroed. Our bypass
+  is OptimalGuardrail-specific (clean url + SECRET_MARKER in data, 5-event taint flush); a payload-
+  inspecting private policy could deny it. Reason about it defensively — the real prize.
+- [ ] **OPTIONAL long shot (low priority):** gpt_oss-only adaptive list (detect multi-post capability at
+  runtime → list for gpt_oss, single-post for gemma). Only ~1.07× mean payoff (gemma-capped) + real-
+  overhead risk; parked unless private-robustness work stalls.
 - [x] ~~AWAIT v5/v7/v8/v9~~ **DONE (E4i):** v5 single-post terse = **36.81** (new best, safe). v7/v8/v9
   dense caps 80/100/120 ALL overran → **dense-multi is a DEAD END** (edge <80; no real efficiency).
   Shipped single-post (`DENSITY_MODE=False`).
@@ -40,8 +40,11 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
 - **Dense-multi = DEAD END (E4i):** v3/v4/v7/v8/v9 all overran/zeroed; it's K single-posts bundled at
   2 turns/post (no gain) with real overhead ~8×. Ship single-post.
 - **Fire rate ~100%, deterministic** (greedy) — E3s. The wall is THROUGHPUT (seconds-per-post).
-- **To reach the ~110 top we need ~3× our throughput** (~6.6s/cand vs our ~20). Only lever: the LIST
-  form (→~1.14 turns/post, ~1.7×) + per-hop reasoning collapse + per-model sizing. See listform plan.
+- **Reaching the ~110 top needs ~3× throughput — but every public lever is now exhausted:** dense-multi
+  (E4i) and list form (E4k) both refuted on the real models. gemma refuses multi-post-per-message
+  (1 call/msg, unbudgeable); gpt_oss list gives only ~1.15× (gemma-capped → ~1.07× mean). **Public
+  throughput has plateaued at ~37.** The remaining axis is the PRIVATE guardrail (robustness, not
+  throughput) — the real ranking lever. See E4k.
 
 ## Next
 - [ ] **Profile per-turn token/latency in the offline scorer** (Q3): record llama.cpp `t_eval_ms` +

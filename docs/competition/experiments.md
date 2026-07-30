@@ -5,6 +5,38 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4k — LIST-FORM FULL LAB (both models): REFUTED as the ~110 lever — gemma won't multi-post, gpt_oss marginal
+- **Date:** 2026-07-30. Full `--listform` run on T4 (both models, 5 designs × K∈{3,5,7}, 3 trials, no
+  submission). COMPLETE. This is a **negative result** and it's robust (see gemma below).
+- **gemma IGNORES the list entirely — decisive.** ALL 15 rows (every design × every K) are IDENTICAL:
+  **ok=1.0/K, turns/post=2.00, tok/post=85, fire 100%.** Gemma emits exactly ONE tool call per user
+  message then returns Final, regardless of framing (numbered steps, "after each result immediately
+  make the next", rote-loop — all → 1 post). So on gemma **list form == single-post** (throughput gain
+  = 0×; tok/post is even slightly worse, 85 vs 47 baseline, from reading the longer message).
+- **gpt_oss under-emits + only ~1.15× — not 1.7×.** Baseline single-post = 2.00 turns/post, 205
+  tok/post, 3.23 s/post. gpt_oss DOES re-loop, but plateaus at **~3-4 ok posts/interact** (never 5 or
+  7) for every design. Best row = **rote_loop K=5**: ok 4.3/5, fire 100%, turns/post 1.23, tok/post 170
+  (<205), s/post 2.87 (<3.23), later-hop tokens collapse (first 296 → late 98). rote_loop K=7: ok 4.0,
+  s/post 4.28 (WORSE — the longer list costs more first-hop than the extra post returns; K=5 is the
+  sweet spot). numbered_rote ballooned (784-1022 tok/post); naive & terse_numbered noisy/under-fired.
+- **turns/post OVERSTATES the gain — hops are NOT equal-cost.** The first hop stays expensive (model
+  reads+reasons once) while only later hops collapse, so turns/post (1.23) implies 1.6× but the honest
+  wall-clock/token proxies say ~1.15×. Projected gpt_oss row (rote_loop K=5): turns/post→59.8
+  (optimistic), **tok/post→44.4, s/post→41.4 (honest, agree)**. Lesson: for list form, rank by s/post
+  (or tok/post), NOT turns/post. (Fixed the verdict logic accordingly; not re-run — data unchanged.)
+- **Mean is capped by gemma.** Public = mean(gpt_oss, gemma). gemma can't be lifted by list form, so the
+  best-case mean lift ≈ (gpt_oss ~1.15× + gemma 1.0×)/2 ≈ **1.07× → 36.81 → ~39-40**, BEFORE any real-
+  overhead haircut (dense's real overhead was ~8× the lab's — offline ≠ real). Far short of ~1.7-3×.
+- **VERDICT: list form is NOT the path to ~110.** gemma hard-refuses multi-post-per-message (fundamental
+  to its tool loop, unbudgeable by framing); gpt_oss gives only a marginal, gemma-capped lift that may
+  not survive real overhead. The plan's premise ("list → ~1.14 turns/post → ~1.7× → mid-60s") is
+  refuted by the real models. 36.81 (v5 single-post terse) remains our safe best & likely public plateau.
+- **Recommended next steps:** (1) Do NOT spend a submission on list form — the offline signal (~1.07×
+  mean, gemma-capped, untested overhead) is too weak vs a scarce submission slot and our safe 36.81.
+  (2) PIVOT to the **private guardrail** (the real ranking axis, untestable) — a robust 37 may beat a
+  fragile higher public score. (3) OPTIONAL long shot: gpt_oss-only adaptive list (detect multi-post
+  capability at runtime, use list for gpt_oss, single-post for gemma) — but mean payoff stays ~1.07×.
+
 ## E4j — LIST-FORM LAB built + SMOKE run (K=3, gpt_oss): harness works; turns/post premise confirmed
 - **Date:** 2026-07-30. Built `make_lab_notebook.py --listform` (steps 1-2 of `listform-lab-plan.md`):
   5 message designs × K∈{3,5,7}, HOPS=8, per-turn token/latency capture, no submission. Pushed the
