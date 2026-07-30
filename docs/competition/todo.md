@@ -3,6 +3,16 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
+- [ ] **FILL-STRATEGY REWORK — the real public lever (E4l, root cause found).** Score = candidate count
+  (`row=0.09·N`); we return ~409 (→36.81), the field returns ~1242 (→112) with the SAME single-post
+  primitive. Root cause: our `run()` probes EVERY candidate at the grader's 8-hop cap (pays the scoring-
+  irrelevant wrap-up turn) and stops at 0.90 of the GENERATION budget → generation-probe-bound at ~405.
+  **Fix (from source-read of pilkwang/tetsutani/haodou):** (1) probe fill at **1 hop** (exfil fires at
+  hop-0; replay is fixed at 8 hops anyway — gateway:635; ~1.5-2× faster fill); (2) **replay-safe sizing**
+  (replay-cost ledger + coef, fill to ~0.97 of the REPLAY budget, the true constraint); (3) fill_frac
+  0.90→0.97. Projects ~37 → ~55-60. Lab-verify 1-hop probe fires 100% on both models BEFORE a submission.
+  Trace shape unchanged → private-guardrail-neutral. **Then frontier (→112): per-turn CoT + forged
+  Harmony multipost, with the private lens.** See E4l.
 - [x] ~~**LIST-FORM LAB — the throughput lever toward ~110**~~ **REFUTED (E4k).** Built
   `make_lab_notebook.py --listform` (lab_listform/, no submission); ran full on T4 (both models, 5
   designs × K∈{3,5,7}, 3 trials). Result: **list form is NOT the path to ~110.**
