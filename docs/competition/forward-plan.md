@@ -1,5 +1,13 @@
 # Forward plan — constraints, profiling, and the density lever
 
+> ⚠️ **SUPERSEDED IN PART (E4i, 2026-07-30).** The "density lever" thesis below is **REFUTED on the real
+> board**: dense-multi = K single-posts bundled at 2 turns/post (no efficiency gain), real overhead ~8×,
+> and it overran (v3/v4/v7/v8/v9 all zeroed). Best real = **v5 single-post terse 36.81** (safe). The
+> only remaining throughput lever toward ~110 is the **LIST form** (one message → K posts across the 8
+> hops → ~1.14 turns/post) — see **`listform-lab-plan.md`**. The SDK facts and constraint analysis below
+> are still valid; the density economics/projection (mean ~335, "2×") were a lab artifact. CoT
+> suppression DID work (terse_mundane, +25%). Read this doc for the mechanics, not the density verdict.
+
 Written after v2 was submitted (E3m). Answers the planning questions: biggest constraints, whether
 we can profile locally, where the LLM time goes, and whether one trace can fire many severity-5
 predicates. All SDK facts here are source-verified (predicates.py, guardrails/optimal.py,

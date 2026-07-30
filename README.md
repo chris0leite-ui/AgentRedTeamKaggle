@@ -36,14 +36,18 @@ if the tool call **succeeded** — which is why the guardrail decides everything
 |---|---|---|
 | v1 | smoke (1 candidate) | 0.090 |
 | trivial | 5 static candidates | 0.450 |
-| **v2** | single-post, adaptive validation-fill | **29.34** (~326 candidates/row) |
-| **v3** | dense adaptive-K message chains | ~63 projected (pending) |
+| v2 | single-post (verbose), validation-fill | 29.34 |
+| **v5** | **single-post (terse_mundane CoT-cut)** | **36.81 — BEST, safe** |
+| v6 | dense, capped 20 (probe) | 11.84 |
+| v3 / v4 / v7 / v8 / v9 | dense (multi), various caps | **all overran → 0 (dead end)** |
 
-**Key calibration:** the real gateway is ~**5.3×** slower per candidate than our offline lab
-(`real ≈ offline ÷ 5.3`). The binding constraint is the slow **gpt_oss** row (chain-of-thought per
-turn); the next lever is a **CoT-suppression** prompt. Density lifts the fast **gemma** row past its
-2000-candidate cap. Multi-predicate-*type* stacking is ruled out (taint). The **private** leaderboard
-uses a hidden `persistent_provenance` guardrail (untestable locally) — public rank ≠ private rank.
+**Key findings.** Fire is ~100% (greedy), so score = **throughput of successful posts** (time-bound by
+the 9000s replay). **CoT-suppression** (terse_mundane) is banked (+25% over v2). **Density is a dead
+end (E4i):** dense-multi = K single-posts bundled at **2 turns/post** (no gain), real overhead ~8×, and
+it overruns. Single-post terse (37) is our safe best. The only lever toward the **~110 top** (needs ~3×
+throughput) is the **LIST form** — one message firing K posts across the 8 hops (~1.14 turns/post); see
+`docs/competition/listform-lab-plan.md`. The **private** leaderboard uses a hidden
+`persistent_provenance` guardrail (untestable) — public rank ≠ private rank, and it decides the winner.
 
 ## Layout
 

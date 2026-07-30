@@ -3,34 +3,37 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
-- [ ] **CoT SUPPRESSION for gpt_oss — the #1 lever now (E3s). Lab BUILT (E4a), awaiting a T4 run.**
-  The binding constraint is the slow gpt_oss row: fire ~100% (greedy — E3s), so the wall is pure
-  THROUGHPUT, and gpt_oss is slow because of chain-of-thought before each tool call. Research (E4a)
-  settled that the true off-switch (`reasoning_effort: low`) is system-level and NOT reachable from our
-  user message — so the only lever is **framing** to shorten a medium-effort pass on a trivial request.
-  `make_lab_notebook.py --cot` A/Bs 4 framings (baseline/terse/subagent/preplanned) capturing per-turn
-  generated tokens + latency + fire. **NEXT: push `lab_cot/` to Kaggle (no submission), record numbers.**
-  If a framing cuts s/turn with fire held → fold into `_exfil_message` (per-model) + re-verify offline.
-- [ ] **AWAIT v3 dense score (ref 55046963, E3q).** Offline proj ~335 → real **~63** at the measured
-  ~5.3× overhead. Confirms the density gain on the real board + the overhead factor on dense.
-- [x] ~~AWAIT v2 score~~ **DONE (E3r): v2 real = 29.34.** Offline 155 → real 29.34 ⇒ **overhead ~5.3×**
-  (not ~1.3×). Real scored ~326 candidates/row. Throughput-bound (fire rate ~100%, E3s), not fire.
-- [x] ~~Build density into `run()`~~ **DONE (E3p): dense adaptive-K chain, verified offline (mean ~335,
-  real ~63).** Submitted as v3. Kept single-post as `DENSITY_MODE=False` fallback.
-- [x] ~~Blind/static emission~~ **RULED OUT (E3s):** fire rate is ~100% (nothing to recover), and blind
-  can't safely out-throughput validation-fill without risking a zeroed gpt_oss row. Not worth a submit.
-- [x] ~~Run the offline public scorer~~ **DONE (E3j smoke, E3l full, E3p dense).**
-- [x] ~~Diagnose the submission hang~~ **CLOSED by E3g:** v1 completed at 0.090 (slow queue, not us).
-- [x] ~~FIX replay-safe sizing in `run()`~~ **DONE (v2/v3):** gen cost ≈ replay cost ⇒ fill to 0.90 of
-  generation keeps replay inside budget; untimed warm-up + slowest-cost tail guard. Gate GREEN.
-- [x] ~~Resolve mean-vs-min~~ **RESOLVED (E3k): it's the MEAN** of the two public rows (pilkwang, source-
-  verified). ⇒ per-model sizing pays off; max gemma toward the 2000-cap.
+- [ ] **LIST-FORM LAB — the #1 (and only) throughput lever toward ~110 (E4i).** Score is throughput
+  (`row≈16·posts/200`, time-bound). Single-post AND dense-multi both cost **2 turns/post** (dense-multi
+  is just K single-posts bundled — no gain, E4i). The only way below 2 turns/post is the **LIST form**:
+  ONE message → K `http.post(SECRET_MARKER)` across the 8 hops → one final turn amortized (≈1.14
+  turns/post). E4c's naive list ballooned reasoning/under-emitted; the lab must engineer a rigid,
+  rote, "no per-call analysis" message that fires all K. **Plan: `docs/competition/listform-lab-plan.md`.
+  NEXT (fresh session): build `make_lab_notebook.py --listform`, run on T4 (no submission), pick the
+  best design, then a TINY capped list submission to test real overhead (v6-style) before scaling.**
+- [ ] **PRIVATE-guardrail robustness** — the hidden guardrail decides final rank (untestable). A robust
+  37 that survives privately may beat a fragile 110 that gets zeroed. Reason about it before over-
+  investing in public throughput.
+- [x] ~~AWAIT v5/v7/v8/v9~~ **DONE (E4i):** v5 single-post terse = **36.81** (new best, safe). v7/v8/v9
+  dense caps 80/100/120 ALL overran → **dense-multi is a DEAD END** (edge <80; no real efficiency).
+  Shipped single-post (`DENSITY_MODE=False`).
+- [x] ~~CoT suppression~~ **DONE (E4b/E4c):** terse_mundane is the winner (~40% less gpt_oss CoT, fire
+  100%); sub-agent framing BACKFIRED; near the framing floor (residual reasoning is mechanical). Banked
+  into `_exfil_message`; drove v5's +25% over v2.
+- [x] ~~Dense (density) into `run()`~~ **REFUTED (E4i):** offline "dense ~2×/mean 408" was a lab
+  artifact; real dense overhead ~8× and it overran. Abandoned. Level-1 gateway harness (E4g) + v6 probe
+  + cap sweep localized it decisively.
+- [x] ~~Local faithful-gateway harness~~ **BUILT (E4g, `--gateway`):** runs the real `_replay_and_score`
+  offline; proved dense replay is valid (failure was scale). Reusable tool.
 
 ## Reality anchors (real-board, measured)
-- **Overhead factor ~5.3×** (offline ÷ 5.3 ≈ real) — E3r. Recalibrate all offline projections by this.
-- **Real scores:** v1 0.090 · trivial 0.450 · **v2 single-post 29.34** · v3 dense ~63 (pending).
-- **Fire rate ~100%, deterministic** (greedy) — E3s. The wall is THROUGHPUT on the slow gpt_oss row.
-- **To top the LB (112 real) we need ~offline 600** → CoT suppression (slow row) + density (gemma).
+- **Best real score: v5 single-post terse = 36.81** (safe). Real single-post fits ~409 candidates/row
+  (~20s/cand real). Prior: v1 0.090 · trivial 0.450 · v2 29.34 · v6 dense(cap20) 11.84.
+- **Dense-multi = DEAD END (E4i):** v3/v4/v7/v8/v9 all overran/zeroed; it's K single-posts bundled at
+  2 turns/post (no gain) with real overhead ~8×. Ship single-post.
+- **Fire rate ~100%, deterministic** (greedy) — E3s. The wall is THROUGHPUT (seconds-per-post).
+- **To reach the ~110 top we need ~3× our throughput** (~6.6s/cand vs our ~20). Only lever: the LIST
+  form (→~1.14 turns/post, ~1.7×) + per-hop reasoning collapse + per-model sizing. See listform plan.
 
 ## Next
 - [ ] **Profile per-turn token/latency in the offline scorer** (Q3): record llama.cpp `t_eval_ms` +
