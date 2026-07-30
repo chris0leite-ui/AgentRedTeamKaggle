@@ -17,9 +17,10 @@ OUT.mkdir(exist_ok=True)
 
 KAGGLE_USERNAME = "chrisleitescha"  # kernel owner (lowercased Kaggle handle)
 COMP = "ai-agent-security-multi-step-tool-attacks"
-SLUG = "attack-dense-cap-v7"  # v7 = dense K=7 + hard COUNT cap 80 (E4h), terse_mundane
+SLUG = "attack-lean-single-v10"  # v6-lean (E4l/E4m): pilkwang-style 86-char single-post + short
+# host + fill 0.93. Slugs v6-v9 are taken by the dead dense line, so this uses v10. terse->lean.
 # Kaggle derives the slug from the TITLE, so keep the title slug-clean and matching SLUG.
-TITLE = "Attack dense cap v7"
+TITLE = "Attack lean single v10"
 
 attack_src = (ROOT / "attack.py").read_text()
 
