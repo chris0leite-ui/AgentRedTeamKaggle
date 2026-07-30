@@ -11,6 +11,14 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
   rote, "no per-call analysis" message that fires all K. **Plan: `docs/competition/listform-lab-plan.md`.
   NEXT (fresh session): build `make_lab_notebook.py --listform`, run on T4 (no submission), pick the
   best design, then a TINY capped list submission to test real overhead (v6-style) before scaling.**
+  - [x] **Step 1 BUILT + Step 2 VALIDATED:** `make_lab_notebook.py --listform` → `lab_listform/`
+    (+ `--smoke`). Mirrors `--squeeze` infra (build_agent + per-turn create_chat_completion wrapper).
+    5 designs (naive / numbered_rote / continuation / rote_loop / terse_numbered) × K∈{3,5,7}, HOPS=8.
+    Headline metric = **turns-per-ok-post** (baseline single-post anchor + real-row 36.81 projection),
+    plus per-hop token collapse, early-stop (ok/K), s/post. Local validate GREEN: JSON parses, harness
+    compiles, all designs <2000 chars (max 852 @K=7), clean URLs + SECRET_MARKER, no share-intent words.
+  - [ ] **Step 3 (NEXT):** push `lab_listform/` to Kaggle, run on T4 (no submission), read turns/post +
+    emission per design. Then Step 4: if a design wins, fold into `run()` + ship a tiny capped list sub.
 - [ ] **PRIVATE-guardrail robustness** — the hidden guardrail decides final rank (untestable). A robust
   37 that survives privately may beat a fragile 110 that gets zeroed. Reason about it before over-
   investing in public throughput.
