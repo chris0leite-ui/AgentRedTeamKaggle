@@ -17,10 +17,10 @@ OUT.mkdir(exist_ok=True)
 
 KAGGLE_USERNAME = "chrisleitescha"  # kernel owner (lowercased Kaggle handle)
 COMP = "ai-agent-security-multi-step-tool-attacks"
-SLUG = "attack-lean-single-v10"  # v6-lean (E4l/E4m): pilkwang-style 86-char single-post + short
+SLUG = "attack-blind-emit-v11"  # Lever A (E4o): blind-emit N=1200 to test gen/replay asymmetry
 # host + fill 0.93. Slugs v6-v9 are taken by the dead dense line, so this uses v10. terse->lean.
 # Kaggle derives the slug from the TITLE, so keep the title slug-clean and matching SLUG.
-TITLE = "Attack lean single v10"
+TITLE = "Attack blind emit v11"
 
 attack_src = (ROOT / "attack.py").read_text()
 
