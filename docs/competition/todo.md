@@ -7,9 +7,16 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
   86-char single-post + short host + fill 0.93; fire 100% both models, ~1.4-1.6x cheaper/cand. The
   lean-candidate lever CONVERTS on the board (per-candidate cost is generation-sensitive, not fixed-
   overhead-bound). Same single-post primitive as the field; trace-shape-neutral (private-safe).
-- [ ] **v7 — push fill 0.93→0.97 + explicit replay-safe sizing** (next public step, projects ~55). Probe
-  stays at 8 hops (directly-measured replay cost); ledger lets us reach the field's 0.97 frac safely.
-  No lab needed (message unchanged). Then evaluate Harmony-forge multipost frontier (private lens).
+- [ ] **BIG-LEVER RESEARCH DONE (E4o) → test the gen/replay asymmetry.** The ~60 wall = per-candidate
+  fixed cost. Pivotal unknown: generation is gRPC-relayed (separate process), replay is in-process —
+  if gen≫replay on the real board we're generation-probe-bound at ~586 and starving replay (could do
+  ~1400-2000). **Lever A (private-safe, ~2-2.5×):** blind-emit toward replay-safe N (probe sample to
+  confirm 100% fire, then blind-append). **Lever B (private-risk, ~1.3-1.8×):** multi-post-per-interact
+  (posts on all 8 hops, kills the wrap-up) — model-emission-limited. **Plan:** (1) --gateway lab for
+  in-process replay_s; (2) ONE stepped blind-emit submission to test A (void=no headroom, no LB harm);
+  (3) lab multi-post ceiling; (4) bank fill 0.97.
+- [ ] **v7 (safe consolidation) — fill 0.93→0.97 + replay-safe sizing** (~+5%). Fold into the blind-emit
+  rework rather than a separate submission.
 
 - [ ] **FILL-STRATEGY REWORK — the real public lever (E4l, root cause found).** Score = candidate count
   (`row=0.09·N`); we return ~409 (→36.81), the field returns ~1242 (→112) with the SAME single-post
