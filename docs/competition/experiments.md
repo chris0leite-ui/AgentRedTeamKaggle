@@ -5,6 +5,20 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4p — LEVER B (multi-post per interact) REFUTED in lab (natural-language form); forge is ~1.1× only
+- **Date:** 2026-07-30. `--multipost` lab (real gpt_oss+gemma, MAX_HOPS=8, K=8, natural-language rote list).
+- **Result — B is a REGRESSION, not tested on the board (saved a submission):**
+  - **gpt_oss: multi fire only 33%, 0.83 posts/interact, 15s → raw/s 1.02 vs single 7.56 = 0.14× (7× WORSE).**
+    The 8-item list confuses gpt_oss — it often emits ZERO scoring posts (fires 2/6). Matches pilkwang's
+    "~0.33 posts for the natural-language form."
+  - **gemma: multi 100% fire but exactly 1.0 post (as E4k predicted — not Harmony), and slower (longer
+    message) → raw/s 10.1 vs single 15.7 = 0.64×.**
+- **Verdict:** natural-language multi-post is dead (worse on BOTH models). The only form that gets gpt_oss
+  to ~4 posts is the **Harmony analysis-channel forge** — gpt_oss-only, changes the trace shape
+  (private-RISK), and pilkwang measures it at just **~1.1×**. Not worth a submission vs Lever A's 2-3×
+  potential. Multi-post is closed (confirms E4k with fresh data). Would have regressed the gpt_oss row
+  (33% fire) if submitted blindly — the lab-first check paid off.
+
 ## E4o — RESEARCH: how to 2-3× (SDK source-read via 3 agents). The wall = per-candidate fixed cost;
 ##        the pivotal unknown = GENERATION(gRPC-relayed) vs REPLAY(in-process) asymmetry.
 - **Date:** 2026-07-30. Three source-reads of the SDK to find levers past the field's ~60 wall.
