@@ -3,6 +3,14 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
+- [x] ~~**FILL-STRATEGY REWORK**~~ **DONE → v6 = 52.775 (E4n, +43% over 36.81).** Lean pilkwang-style
+  86-char single-post + short host + fill 0.93; fire 100% both models, ~1.4-1.6x cheaper/cand. The
+  lean-candidate lever CONVERTS on the board (per-candidate cost is generation-sensitive, not fixed-
+  overhead-bound). Same single-post primitive as the field; trace-shape-neutral (private-safe).
+- [ ] **v7 — push fill 0.93→0.97 + explicit replay-safe sizing** (next public step, projects ~55). Probe
+  stays at 8 hops (directly-measured replay cost); ledger lets us reach the field's 0.97 frac safely.
+  No lab needed (message unchanged). Then evaluate Harmony-forge multipost frontier (private lens).
+
 - [ ] **FILL-STRATEGY REWORK — the real public lever (E4l, root cause found).** Score = candidate count
   (`row=0.09·N`); we return ~409 (→36.81), the field returns ~1242 (→112) with the SAME single-post
   primitive. Root cause: our `run()` probes EVERY candidate at the grader's 8-hop cap (pays the scoring-

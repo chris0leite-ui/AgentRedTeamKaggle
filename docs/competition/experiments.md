@@ -5,6 +5,23 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4n — v6 SCORED 52.775 (+43% over v5's 36.81): the lean-candidate lever CONVERTS on the board
+- **Date:** 2026-07-30. Submitted v6 (`attack-lean-single-v10`, ref 55109927) → **public 52.775** vs v5
+  36.81 = **+43.4%** (×1.434). Clean COMPLETE, no overrun (0.93 fill was safe as projected).
+- **What it proves:** the ~1.43× score lift ≈ the ~1.4-1.6× offline s/cand speedup (E4m), so the board's
+  per-candidate cost is NOT fixed-overhead-dominated — **message/generation leanness is a real,
+  convertible fraction**. (Had it been all fixed env/relay overhead, we'd have stayed ~37. It didn't.)
+  Confirms the E4l root cause: score = candidate throughput, and cheaper candidates ⇒ more fit the
+  replay wall ⇒ higher N. Same single-post primitive as the field; the win was purely leaner candidate.
+- **Where we sit:** 52.775 is in the pilkwang field cluster (~60). The remaining gap to ~60 is fill
+  (0.93 → field's 0.95 gen / 0.97 replay-safe) — a few %. The gap to the ~112 frontier is the
+  Harmony-forge multipost on the gpt_oss row (SLOW_MULTIPOST_N>1), rated only ~1.1× by pilkwang.
+- **Next (public, safe):** v7 = raise fill 0.93→0.97 + add explicit replay-safe sizing (probe still at
+  8 hops = directly-measured replay cost; the ledger just lets us push the frac toward the field's 0.97
+  without an overrun). Projects ~52.8 × (0.97/0.93) ≈ **~55**. Lab is not needed (message unchanged,
+  fire already 100%); the only risk is overrun at higher frac, bounded by the self-measured cost +
+  ~cushion. Then evaluate the forge-multipost frontier through the private-guardrail lens.
+
 ## E4m — v6 LEAN-MESSAGE VERIFIED on both real models (fire 100%, ~1.4-1.6× cheaper) → submit candidate
 - **Date:** 2026-07-30. Implemented v6 (lean single-post) per E4l and ran the fire-rate/latency lab on
   the REAL gpt_oss + gemma (T4, 20 trials each). v6 = pilkwang-style 86-char message
