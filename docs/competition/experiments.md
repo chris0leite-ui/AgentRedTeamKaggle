@@ -5,6 +5,32 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4q — LEVER A (blind-emit N=1200) VOIDED (overran replay) → large gen/replay asymmetry REFUTED
+- **Date:** 2026-07-31. Submitted blind-emit N=1200 (ref 55132496) → **COMPLETE, NO public score** = the
+  replay-overrun void signature (same as dense v3/v4/v7/v8/v9). Rerun ran ~3h (vs v6 ~2h) — replay was
+  grinding through ~2× candidates, then overran the 9000s wall → INVALID_SUBMISSION.
+- **What it proves:** replay of 1200 > 9000s ⇒ **real replay_s > 7.5s**. v6 (N=586) scored ⇒ replay_s ≤
+  15.4s. So real per-candidate replay ≈ **7.5-15.4s**, NOT the ~2-5.6s the offline lab implied. The
+  **large gen(relayed)≪replay(in-process) asymmetry (E4o) is REFUTED** — real replay is nearly as slow
+  as real generation (both ~14s, dominated by per-candidate MODEL GENERATION, not env-build or gRPC).
+  The field's ~60 wall is a REAL infrastructure ceiling for single-post, not a sizing artifact.
+- **Cross-check (why it's generation-cost, not env-build):** v5→v6 (leaner message, offline −1.16s/cand)
+  gave +43% real candidates ⇒ the message/generation is a LARGE fraction of real per-candidate cost
+  (env-build fixed cost is small). So per-candidate ≈ 2 model turns × ~7s. **~586 candidates ≈ the
+  single-post ceiling → mean ~53-56.**
+- **Both hypothesized big levers now refuted:** A (blind-emit, E4q) and B (multi-post, E4p). Single-post
+  on this infra caps ~55-60. Remaining, in order of promise:
+  1. **[UNTESTED, most promising] Kill the scoring-irrelevant WRAP-UP turn's cost.** Replay = 2 model
+     turns/candidate (post @hop0 + a FinalResponse wrap-up @hop1 that scores NOTHING). If gpt_oss reasons
+     on that wrap-up turn, it's ~half the per-candidate cost. A message / Harmony analysis-channel forge
+     that makes the wrap-up near-instant (or 0-token) could ~1.5-2× throughput. LAB-testable offline
+     (break tok-per-turn into post-turn vs wrap-up-turn). No submission needed to test the premise.
+  2. **[safe, small] Consolidate fill 0.93→0.97** (validation-fill, self-sizes to gen ≈ replay, no void
+     risk) → ~55-56. Robust for the private track.
+  3. **[low-EV] One smaller blind-emit N~750** to check for partial headroom — but the void signal says
+     replay≈gen, so likely voids; not worth a 3h rerun before testing lever 1.
+- **Best public remains v6 = 52.775** (a void doesn't lower the best-score LB standing).
+
 ## E4p — LEVER B (multi-post per interact) REFUTED in lab (natural-language form); forge is ~1.1× only
 - **Date:** 2026-07-30. `--multipost` lab (real gpt_oss+gemma, MAX_HOPS=8, K=8, natural-language rote list).
 - **Result — B is a REGRESSION, not tested on the board (saved a submission):**
