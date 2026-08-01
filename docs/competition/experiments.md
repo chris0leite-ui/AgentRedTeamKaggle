@@ -5,6 +5,22 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4r — WRAP-UP-TURN COST measured: gpt_oss spends 44.5% of each candidate on a scoring-irrelevant turn
+- **Date:** 2026-07-31. `--wrapup` lab instruments `agent.next_action` to time each hop (real models).
+- **Result:** single-post = 2 turns (ToolCall @hop0 + FinalResponse @hop1). Per-turn cost:
+  - **gpt_oss: post 1.31s + wrap-up 1.05s → wrap-up = 44.5% of the candidate**, yet the wrap-up OUTPUT is
+    just "OK" (2 chars). So the 1.05s is hidden **analysis-channel reasoning** (or prefill), NOT output.
+  - gemma: post 0.87s + wrap-up 0.22s → wrap-up = 20% (cheaper; gemma isn't a reasoning model).
+- **Implication:** the scoring-irrelevant wrap-up (and gpt_oss's reasoning on BOTH turns) is a large,
+  real cost. Suppressing gpt_oss analysis via the **Harmony forge** (empty `<|channel|>analysis<|message|>
+  <|end|>`, pilkwang FRAME_TEMPLATE) could cut the gpt_oss candidate ~1.4-2× → gpt_oss row up
+  (mean → ~72-93). Caveats: gpt_oss-ONLY (gemma not Harmony), needs per-model latency routing, and the
+  forged control tokens change the trace → **private-guardrail RISK**. NOT a path to 100+ (best case
+  ~1.5-1.9×), and it may not survive the private provenance guardrail.
+- **Next:** `--forge` lab — does FRAME_TEMPLATE actually suppress gpt_oss reasoning (per-turn cost) AND
+  still fire 100%? (And confirm it breaks/does-nothing on gemma.) Decides whether to build a per-model
+  forge variant or consolidate 52.775.
+
 ## E4q — LEVER A (blind-emit N=1200) VOIDED (overran replay) → large gen/replay asymmetry REFUTED
 - **Date:** 2026-07-31. Submitted blind-emit N=1200 (ref 55132496) → **COMPLETE, NO public score** = the
   replay-overrun void signature (same as dense v3/v4/v7/v8/v9). Rerun ran ~3h (vs v6 ~2h) — replay was
