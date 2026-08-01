@@ -17,10 +17,10 @@ OUT.mkdir(exist_ok=True)
 
 KAGGLE_USERNAME = "chrisleitescha"  # kernel owner (lowercased Kaggle handle)
 COMP = "ai-agent-security-multi-step-tool-attacks"
-SLUG = "attack-blind-emit-v11"  # Lever A (E4o): blind-emit N=1200 to test gen/replay asymmetry
+SLUG = "attack-forge-v12"  # Lever C (E4s): per-model Harmony-forge (gpt_oss ~3.12x) + plain gemma
 # host + fill 0.93. Slugs v6-v9 are taken by the dead dense line, so this uses v10. terse->lean.
 # Kaggle derives the slug from the TITLE, so keep the title slug-clean and matching SLUG.
-TITLE = "Attack blind emit v11"
+TITLE = "Attack forge v12"
 
 attack_src = (ROOT / "attack.py").read_text()
 
@@ -87,7 +87,7 @@ else:
         mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
         fx = glob.glob("/kaggle/input/**/aicomp_sdk/fixtures/web_corpus.json", recursive=True)
         fixtures = Path(fx[0]).parent if fx else None
-        found = eval_attack(mod.AttackAlgorithm, budget_s=15.0,
+        found = eval_attack(mod.AttackAlgorithm, budget_s=45.0,
                             agent_factory=build_agent_factory("deterministic"),
                             env_selection="gym", attack_env_seed=123, fixtures_dir=fixtures)
         print(f"SELF-TEST OK: run()+replay completed cleanly | findings={len(found)} "

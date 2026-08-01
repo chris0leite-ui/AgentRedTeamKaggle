@@ -5,6 +5,25 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4s — FORGE WORKS: Harmony analysis-forge = 3.12× FASTER gpt_oss candidates, 100% fire (the 2× lever)
+- **Date:** 2026-07-31. `--wrapup` forge comparison (real models, per-turn timing).
+- **Result:**
+  - **gpt_oss: plain 2.34s → forge 0.75s = 3.12× speedup, fire 100%.** The forge (empty Harmony analysis
+    channel, pilkwang FRAME_TEMPLATE) suppresses reasoning on BOTH turns (post 1.32→0.47, wrap 1.01→0.28).
+  - **gemma: plain 1.07s → forge 1.47s = 0.73× (SLOWER), fire 100%.** Gemma isn't Harmony — the forge
+    tokens bloat it but don't break firing.
+- **The trace is scoring/guardrail-equivalent:** the forge tokens live in the USER message; the scored
+  `tool_events` are an identical clean `http.post` (url + SECRET_MARKER-in-data), and the score-cell is
+  `cell_signature(tool_events)` (no user_messages) — so unique-domain cells still count. Private-risk is
+  low (guardrail inspects tool calls, not user-message tokens), though it's still a trace change.
+- **Lever (SAFE — validation-fill self-sizes, no overrun):** per-model template — forge gpt_oss (3.12×
+  more candidates → row ~164, toward the 180/2000-cap), plain gemma (row ~53). **mean → ~108 (≈2× over
+  52.775).** Auto-route with NO magic threshold: probe plain AND forge in calibration, pick the faster
+  (forge auto-wins gpt_oss, plain auto-wins gemma). Generation speedup is generation-bound cost, so the
+  3.12× should convert to the real board (unlike the refuted replay-asymmetry).
+- **Next:** implement FORGE_MODE (calibrate plain-vs-forge → pick faster → validation-fill), self-test,
+  submit. Projects mean ~100-108.
+
 ## E4r — WRAP-UP-TURN COST measured: gpt_oss spends 44.5% of each candidate on a scoring-irrelevant turn
 - **Date:** 2026-07-31. `--wrapup` lab instruments `agent.next_action` to time each hop (real models).
 - **Result:** single-post = 2 turns (ToolCall @hop0 + FinalResponse @hop1). Per-turn cost:
