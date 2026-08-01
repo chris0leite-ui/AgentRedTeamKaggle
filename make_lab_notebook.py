@@ -31,11 +31,14 @@ SQUEEZE = "--squeeze" in sys.argv
 GATEWAY = "--gateway" in sys.argv
 LISTFORM = "--listform" in sys.argv
 MULTIPOST = "--multipost" in sys.argv
+WRAPUP = "--wrapup" in sys.argv
 SMOKE = "--smoke" in sys.argv
 
 ROOT = Path(__file__).resolve().parent
 if MULTIPOST:
     OUT = ROOT / ("lab_multipost_smoke" if SMOKE else "lab_multipost")
+elif WRAPUP:
+    OUT = ROOT / ("lab_wrapup_smoke" if SMOKE else "lab_wrapup")
 elif LISTFORM:
     OUT = ROOT / ("lab_listform_smoke" if SMOKE else "lab_listform")
 elif GATEWAY:
@@ -57,6 +60,9 @@ COMP = "ai-agent-security-multi-step-tool-attacks"
 if MULTIPOST:
     SLUG = "attack-multipost-smoke" if SMOKE else "attack-multipost-lab"
     TITLE = "Attack multipost smoke" if SMOKE else "Attack multipost lab"
+elif WRAPUP:
+    SLUG = "attack-wrapup-smoke" if SMOKE else "attack-wrapup-lab"
+    TITLE = "Attack wrapup smoke" if SMOKE else "Attack wrapup lab"
 elif LISTFORM:
     SLUG = "attack-listform-smoke" if SMOKE else "attack-listform-lab"
     TITLE = "Attack listform smoke" if SMOKE else "Attack listform lab"
@@ -84,6 +90,8 @@ else:
 N_TRIALS = 2 if SMOKE else 20
 if MULTIPOST:
     N_TRIALS = 2 if SMOKE else 6  # 8-hop multipost interacts are slow; a small N is enough for posts/interact
+if WRAPUP:
+    N_TRIALS = 2 if SMOKE else 8  # per-turn timing; a small N is enough to see the wrap-up fraction
 RUN_GEMMA = not SMOKE
 
 # Scorer knobs: sample size for the timing estimate, and a generous generation window (the
@@ -1786,9 +1794,112 @@ for r in results:
 print("\\nKEY: Lever B helps iff multi fires on BOTH models (gemma>=1 post) AND multi raw/s > single raw/s.")
 ''').replace("__N_TRIALS__", str(N_TRIALS)).replace("__RUN_GEMMA__", str(RUN_GEMMA))
 
+wrapup_intro = """## Wrap-up-turn cost (E4q lever probe)
+Single-post replay = 2 model turns: the POST (hop 0, scored) + a FinalResponse WRAP-UP (hop 1, scores
+NOTHING). This instruments `agent.next_action` to time EACH hop on the real gpt_oss + gemma, so we can
+see what fraction of a candidate's cost is the scoring-irrelevant wrap-up. If the wrap-up is a large
+fraction (esp. gpt_oss reasoning before "OK"), suppressing it is a real ~1.5-2× throughput lever; if
+it's already tiny, single-post is at its honest ceiling."""
+
+wrapup_harness = ('''\\
+# E4q: per-hop timing for single-post (post-turn vs wrap-up-turn), both real models.
+import gc, time
+from aicomp_sdk.agents.hf_chat_template.backends.llama_cpp import LlamaCppChatTemplateBackend
+from aicomp_sdk.agents.hf_chat_template.types import HFBackendConfig
+from aicomp_sdk.core.env.sandbox import SandboxEnv
+from aicomp_sdk.guardrails.optimal import Guardrail as OptimalGuardrail
+from aicomp_sdk.core.predicates import eval_predicates
+from huggingface_hub import hf_hub_download
+from kaggle_evaluation.jed_attack_134815.gpt_oss_model_server import SPEC as GPT_OSS_SPEC
+from kaggle_evaluation.jed_attack_134815.gemma_model_server import SPEC as GEMMA_SPEC
+from attack import AttackAlgorithm
+
+N_TRIALS = __N_TRIALS__
+RUN_GEMMA = __RUN_GEMMA__
+
+def build_agent(spec, n_gpu_layers=-1):
+    mp = os.environ.get(spec.model_path_env_var, "").strip()
+    model_path = mp if (mp and os.path.exists(mp)) else hf_hub_download(repo_id=spec.repo(), filename=spec.filename())
+    cfg = HFBackendConfig(model_id=spec.model_id, model_path=model_path, max_new_tokens=spec.max_new_tokens)
+    backend = LlamaCppChatTemplateBackend.from_model_path(model_path=model_path, config=cfg,
+              n_ctx=spec.n_ctx, n_gpu_layers=n_gpu_layers, supports_tools=spec.supports_tools)
+    return spec.create_agent(backend), backend
+
+def decision_len(d):
+    for attr in ("text", "content", "message", "output", "response"):
+        v = getattr(d, attr, None)
+        if isinstance(v, str) and v:
+            return len(v)
+    return len(str(d))
+
+def measure(spec, n_gpu_layers=-1):
+    print("\\n=== %s: loading ===" % spec.model_label, flush=True)
+    t0 = time.monotonic(); agent, backend = build_agent(spec, n_gpu_layers)
+    print("loaded in %.0fs" % (time.monotonic() - t0), flush=True)
+    env = SandboxEnv(seed=123, fixtures_dir=FIXTURES, agent=agent, guardrail=OptimalGuardrail())
+    doms = AttackAlgorithm._unique_domains()
+    turn_log = []
+    orig = agent.next_action
+    def timed(*a, **k):
+        t = time.monotonic(); r = orig(*a, **k)
+        turn_log.append((time.monotonic() - t, type(r).__name__, decision_len(r)))
+        return r
+    agent.next_action = timed
+    post_ts = []; wrap_ts = []; wrap_len = []; nturns = []; fires = 0
+    for i in range(N_TRIALS):
+        msg = AttackAlgorithm._exfil_message(next(doms), i)
+        turn_log.clear(); env.reset()
+        try:
+            env.interact(msg, max_tool_hops=8)
+            fired = bool(eval_predicates(env.export_trace_dict()))
+        except Exception as e:
+            print("  err:", type(e).__name__, e); fired = False
+        fires += int(fired); nturns.append(len(turn_log))
+        p = turn_log[0][0] if turn_log else 0.0
+        w = sum(t for t, _, _ in turn_log[1:]); wl = sum(l for _, _, l in turn_log[1:])
+        if turn_log: post_ts.append(p)
+        if len(turn_log) >= 2: wrap_ts.append(w); wrap_len.append(wl)
+        print("  [%d] turns=%d post=%.1fs wrap=%.1fs kinds=%s fired=%s"
+              % (i + 1, len(turn_log), p, w, [k for _, k, _ in turn_log], fired), flush=True)
+    m = lambda x: sum(x) / len(x) if x else 0.0
+    pp = m(post_ts); ww = m(wrap_ts); tot = pp + ww
+    print(">>> %s: turns=%.2f | post-turn %.2fs | wrap-turn %.2fs = %.0f%% of candidate | wrap chars=%.0f | fire=%.0f%%"
+          % (spec.model_label, m(nturns), pp, ww, 100 * ww / tot if tot else 0, m(wrap_len), 100 * fires / N_TRIALS), flush=True)
+    backend.close(); del agent, backend, env; gc.collect()
+    try:
+        import torch; torch.cuda.empty_cache()
+    except Exception:
+        pass
+    return {"model": spec.model_label, "post_s": round(pp, 2), "wrap_s": round(ww, 2),
+            "wrap_frac": round(ww / tot, 3) if tot else 0.0, "wrap_chars": round(m(wrap_len)), "turns": round(m(nturns), 2)}
+
+def measure_safe(spec):
+    try:
+        return measure(spec)
+    except Exception as e:
+        print("full-GPU failed (%s); partial offload" % type(e).__name__, flush=True); gc.collect()
+        try:
+            import torch; torch.cuda.empty_cache()
+        except Exception:
+            pass
+        return measure(spec, n_gpu_layers=20)
+
+results = [measure_safe(GPT_OSS_SPEC)]
+if RUN_GEMMA:
+    results.append(measure_safe(GEMMA_SPEC))
+print("\\n==================== WRAP-UP SUMMARY ====================")
+for r in results:
+    print(r, flush=True)
+print("\\nKEY: wrap_frac > ~0.3 (esp. gpt_oss, with big wrap chars = reasoning) ⇒ suppressing the wrap-up")
+print("turn is a real ~1/(1-wrap_frac)× lever. wrap_frac small ⇒ single-post is near its honest ceiling.")
+''').replace("__N_TRIALS__", str(N_TRIALS)).replace("__RUN_GEMMA__", str(RUN_GEMMA))
+
 if MULTIPOST:
     cells = [md(multipost_intro), code(setup), code(write_attack), code(ensure_llama),
              code(multipost_harness)]
+elif WRAPUP:
+    cells = [md(wrapup_intro), code(setup), code(write_attack), code(ensure_llama),
+             code(wrapup_harness)]
 elif LISTFORM:
     cells = [md(listform_intro), code(setup), code(write_attack), code(ensure_llama),
              code(listform_harness)]
