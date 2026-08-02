@@ -48,6 +48,31 @@ steps**. One entry per submission or notable local run.
 - **NEXT:** await v14 + v13 scores. If v14 scores >80.7 → gemma undersized, next push harder (higher
   count / also 1-hop gpt_oss cautiously). If v14 voids → pivot to cheaper-gemma-candidate levers.
 
+### E4y ladder — GEMMA CEILING-BRACKET (all 5/5 daily submissions spent, 2026-08-02)
+- **Reframed by re-reading E4q:** E4q's N=1200 blind-emit voided ⇒ real replay ≈ real generation (~14s/
+  cand, NO large relay gap) ⇒ gemma single-post ceiling ≈ 600 (plain) / ~760-800 (notext, leaner). So a
+  DEEP push voids; the disciplined move is a tight ceiling-bracket to pin gemma's max safe count and bank
+  the best safe row. Built `GEMMA_BLIND_TARGET` (confirm fire on a 1-hop sample → return EXACTLY N
+  homogeneous notext candidates, p≈1; gpt_oss untouched at safe ~1200). Verified locally: returns exact N,
+  routes only for gemma. Each rung self-test GREEN on Kaggle before submit.
+
+  | ref | rung | gemma N | expected |
+  |---|---|---|---|
+  | 55185855 | v13 (baseline, notext validation-fill) | ~589 | safe, ~87 if notext converts |
+  | 55195182 | v14 (notext 1-hop fill) | ~780 | at ceiling estimate — marginal |
+  | 55195606 | blind-700 | 700 | ≤ceiling → scores (~85) |
+  | 55195608 | blind-850 | 850 | marginal |
+  | 55195617 | blind-1000 | 1000 | upper probe — likely VOIDS (maps ceiling) |
+
+- **The bracket pins gemma's notext replay ceiling** at whichever rung is the highest non-void. gpt_oss
+  held at its proven-safe ~1200 (row ~108) in every rung, so its row never risks voiding.
+- **Honest expectations (NOT ~112):** E4q's cost model caps this lever at gemma ~800 → mean ~88-92. The
+  leaders' ~1254 gemma count implies a CHEAPER-CANDIDATE technique (½ our replay cost) that returning-more
+  cannot reach — that is the next LAB direction (find a gemma message that generates fewer tokens/turn),
+  not a submission. v12 80.705 stands regardless of any void.
+- **NEXT:** read the bracket (all 5 scored reruns ~7-9h each). Highest non-void = gemma ceiling ⇒ new safe
+  best + resolves the gemma gap's ceiling. Then pivot to cheaper-gemma-candidate lab work for the >800 gap.
+
 ## E4x — OPTIMALITY PROOF: 18 pts/clean-call is the max single-call primitive (source-verified), and it is CONSISTENT with the ~112 board
 - **Date:** 2026-08-02. Source-read of the actual scorer + both guardrails + predicate logic + every
   tool's side_effect (not memory). Question answered: "is there a better scoring primitive?" **No —
