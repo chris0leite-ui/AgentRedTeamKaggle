@@ -17,10 +17,10 @@ OUT.mkdir(exist_ok=True)
 
 KAGGLE_USERNAME = "chrisleitescha"  # kernel owner (lowercased Kaggle handle)
 COMP = "ai-agent-security-multi-step-tool-attacks"
-SLUG = "attack-forge-v12"  # Lever C (E4s): per-model Harmony-forge (gpt_oss ~3.12x) + plain gemma
+SLUG = "attack-router-v13"  # v13 (E4u): plain/forge/notext auto-router + fill 0.95
 # host + fill 0.93. Slugs v6-v9 are taken by the dead dense line, so this uses v10. terse->lean.
 # Kaggle derives the slug from the TITLE, so keep the title slug-clean and matching SLUG.
-TITLE = "Attack forge v12"
+TITLE = "Attack router v13"
 
 attack_src = (ROOT / "attack.py").read_text()
 
