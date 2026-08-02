@@ -38,9 +38,15 @@ steps**. One entry per submission or notable local run.
 - **NET:** 1-hop probing is validated and worth 1.32-1.55× on generation-probe throughput; whether it
   converts (or voids) hinges on the relay gap, which only a real stepped submission reveals. This is the
   enabling tech for fill-economics lever (B).
-- **NEXT:** await v13 (the notext-gemma test, still PENDING ~7h+). Then decide a v14 that (i) probes at
-  hops=1 and (ii) caps the returned count to a CONSERVATIVE step over v12/v13 (bounded void risk), to
-  probe the replay ceiling while banking any undersizing headroom. Requires go-ahead (spends a submission).
+- **SUBMITTED v14 (ref 55195182, 2026-08-02 21:27, PENDING):** gemma fill probes at 1-hop (only when the
+  router picks notext ⇒ gemma) → ~1.32× more validated candidates (~589→~780). gpt_oss unchanged (it's
+  ~saturated at ~1200). Self-test GREEN on Kaggle before submit. **This is a clean binary test of the
+  gemma relay gap:** scores ~89 if gemma has replay headroom (undersized → push more), VOIDS if gemma is
+  saturated (⇒ leaders reach ~1254 via CHEAPER candidates, not more — a different lever). ~780 sits inside
+  gemma's [589,1200] ceiling bracket (E4q), so a void is not the likeliest outcome. Best (v12 80.705)
+  stands regardless. 3 submissions left today.
+- **NEXT:** await v14 + v13 scores. If v14 scores >80.7 → gemma undersized, next push harder (higher
+  count / also 1-hop gpt_oss cautiously). If v14 voids → pivot to cheaper-gemma-candidate levers.
 
 ## E4x — OPTIMALITY PROOF: 18 pts/clean-call is the max single-call primitive (source-verified), and it is CONSISTENT with the ~112 board
 - **Date:** 2026-08-02. Source-read of the actual scorer + both guardrails + predicate logic + every
