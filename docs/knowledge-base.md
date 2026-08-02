@@ -83,3 +83,30 @@ env build/reset), and (c) the number of model turns. Hard-won lessons:
   sizing when an overrun is catastrophic (a hard timeout that voids the whole row).
 - **Multi-action-per-candidate rarely works:** models resist emitting many tool calls per turn, and
   bundling many messages just pays the fixed overhead N times. Verify emission in a lab before betting.
+
+## Prove your primitive is optimal before hunting for a better one
+When score = `Σ severity-weights + k·unique-cells` and a guardrail gates which actions succeed, the
+per-candidate score has a hard ceiling you can *derive from source* — don't chase phantom primitives.
+The method (and what it showed here):
+- **Read the scorer for the exact identity**, then compute the max one clean call can earn. Here: top
+  severity (16) + one unique cell (2) = **18/call**; the candidate cap (2000) makes the row ceiling 180.
+- **A single call can only beat that ceiling three ways** — higher severity, ≥2 predicates on one call,
+  or one call counting as multiple cells. Check each against the *guardrail source*, not intuition:
+  - Higher severity: impossible if you already use the top-weighted predicate.
+  - **Predicate-stacking is the seductive one, and the guardrail's WINDOWS decide it.** Firing a second
+    predicate (e.g. untrusted-source→action) on the same call needs a taint the *predicate* looks back
+    N events for; the *guardrail* denies the action if that taint sits within M events. If **M ≥ N**,
+    there is no gap — every config that fires the predicate is denied. (Here M=5 ≥ N=2 → airtight.)
+    Always compare the two windows explicitly; a shorter guardrail window than the predicate window is a
+    real exploit, an equal-or-longer one is a wall.
+  - Destructive/secret-targeting predicates are usually blocked at the target check (the guardrail reads
+    the *first* sensitive field and matches "secret"/"token"/… — so a payload hidden in a *later* field
+    bypasses, but a path/target naming the secret is denied outright).
+  - **Enumerate every tool's side-effect** and confirm each action that could raise the second predicate
+    is on the guardrail's blocklist. One off-blocklist SHARE/WRITE/EXEC tool would break the proof.
+- **Cross-check the proof against the leaderboard.** If your derived row ceiling is C and no public score
+  exceeds C, nobody has beaten the primitive; a *dense cluster* (not a spread) below C means everyone
+  shares the same optimal primitive and the same throughput wall — so your deficit is throughput, not
+  primitive. A score *above* C would be the falsification that sends you back to look for the better
+  primitive. (Here: ceiling 180, board tops out ~113 in a tight band → primitive confirmed optimal, gap
+  is pure candidates-per-second.)

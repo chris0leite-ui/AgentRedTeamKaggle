@@ -13,6 +13,15 @@ v5 36.81 → v6 lean 52.775 → **v12 forge 80.705** (full detail in `experiment
   `forge_anal` on gpt_oss (0.73 stays the winner); `gemma_tc` (`<|tool_call>` prefill) = SLOWER than
   `notext` on gemma (row 93.5 vs 146.0). **v13's config (gpt_oss=forge_anal, gemma=notext) is confirmed
   optimal across all 7 variants → NO v14 from these.** Web corrected understanding, not throughput.
+- **PRIMITIVE PROVEN OPTIMAL (E4x).** Source-verified: 18 pts/clean-call is the max (top severity 16 + 1
+  cell 2); every stacking path is guardrail-blocked (taint window 5 ⊇ predicate window 2; secret-path
+  denied; all SHARE/WRITE/EXEC tools on the blocklist). **Consistent with the live board** (top 112.865,
+  dense ~104-113 band, nothing > the 180 ceiling → everyone shares the 18/call primitive). **STOP hunting
+  for a better primitive.** The 80→112 gap is decoded as a **gemma throughput gap** (leaders ~1254
+  cand/model; us gpt_oss ~1200 ✓ + gemma ~589; notext only →~740→mean ~87, leaves ~1.7× residual on gemma).
+- **REDIRECTED FRONTIER (only two levers left):** (1) **gemma seconds-per-candidate** — close the ~1.7×
+  residual the leaders have (better gemma prefill? cheaper turns? are we under-using the budget? — the
+  1800-vs-9000s discrepancy E4v may be relevant). (2) **PRIVATE-guardrail robustness** — the hidden board.
 - [ ] **PRIVATE-guardrail robustness = the real open question** (final rank is on the hidden PRIVATE
   board). The forge injects Harmony tokens into the USER message; scored tool_events are identical clean
   http.posts (guardrail inspects tool calls, not message text) → *likely* private-safe but untestable.
