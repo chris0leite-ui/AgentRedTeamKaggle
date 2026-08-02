@@ -1,3 +1,6 @@
+> **COMPLETED (E4g).** This plan was built as `make_lab_notebook.py --gateway` (runs the real
+> replay+score offline). Reusable tool; kept for history. Current status: `todo.md`.
+
 # Local faithful-gateway harness — design & plan
 
 Why: two dense submissions (v3/v4) came back COMPLETE with **no score**; every single-post submission

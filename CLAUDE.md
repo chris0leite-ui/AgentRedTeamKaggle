@@ -35,9 +35,11 @@ The operating manual. Kept deliberately short; details live in the files it poin
 - **Teach as we go.** Explain what I'm doing in simple, concise terms so the user learns from it.
 
 ## Where things live
+- `docs/competition/how-it-works.md` — **plain-English explainer with diagrams (START HERE).**
+- `docs/competition/assumptions.md` — every assumption we rely on, with confidence + how we'd know it's wrong.
 - `docs/glossary.md` — our shared vocabulary (ubiquitous language). Fix fuzzy terms here.
 - `docs/knowledge-base.md` — transferable AI-agent-security knowledge (survives the competition).
-- `docs/competition/agent-model.md` — visual model (agent loop, guardrail seams, candidate blocks).
+- `docs/competition/agent-model.md` — visual model (agent loop, guardrail seams, our v12 forge program, throughput).
 - `docs/competition/reference.md` — competition-specific facts (contract, scoring, guardrail).
 - `docs/competition/problem.md` — 7-step problem framing, BOTE calcs, option comparisons.
 - `docs/competition/forward-plan.md` — constraint analysis, profiling plan, the exfil-density lever

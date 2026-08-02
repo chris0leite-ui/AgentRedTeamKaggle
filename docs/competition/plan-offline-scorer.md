@@ -1,3 +1,6 @@
+> **COMPLETED / SUPERSEDED (E4g).** The offline scorer this plan describes was built into the lab
+> harness (`--score` / `--gateway`). Kept for history. Current status: `todo.md`.
+
 # Plan — offline public scorer (+ submission-safety fix)
 
 **Status:** **BUILT — not yet run on Kaggle** (E3h). Implemented as `make_lab_notebook.py --score`

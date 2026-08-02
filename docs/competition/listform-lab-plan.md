@@ -1,3 +1,7 @@
+> **SUPERSEDED (E4k, E4t).** The list-form lever this plan describes was REFUTED (E4k: gemma won't
+> multi-post, gpt_oss ~1.15×). The real throughput lever turned out to be the reasoning-forge
+> (E4s/E4t → best 80.705). Kept for history. Current status: `todo.md`; how it works: `how-it-works.md`.
+
 # List-form lab — design & plan (the path toward the ~110 top)
 
 **Why:** the cap sweep (E4i) settled that single-post terse (36.81) is our safe best and dense-multi is
