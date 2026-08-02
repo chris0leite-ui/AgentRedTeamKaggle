@@ -5,6 +5,27 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4t — FORGE v12 SCORED 80.705 (+53% over v6 52.775; 2.19× the v5 baseline) — new best, above the field
+- **Date:** 2026-08-01. Submitted per-model forge (ref 55169755) → **public 80.705.** Clean COMPLETE, no
+  overrun (validation-fill self-sized as designed). New best; **above the pilkwang ~60 field cluster.**
+- **Back-out:** mean 80.705 ⇒ rows sum 161.4. With gemma auto-routed to PLAIN (unchanged ~53), gpt_oss
+  row ≈ **108** ⇒ N_gpt ≈ 1200 = **~2.05× v6's ~586** (not the offline 3.12×). The auto-route WORKED
+  (gemma calibration picked plain — else gemma would be ~39 and the mean ~73).
+- **Why 2× not 3.12×:** the forge's 3.12× is a GENERATION-cost speedup, but real per-candidate =
+  generation + a fixed per-candidate overhead F (env-build/reset, ~4s real). Forge cuts only generation:
+  real gpt_oss 14s → ~7.2s (F≈4 + gen≈3.2) = ~1.94× — matches the observed ~2×. So F dilutes the forge.
+- **Where the ceiling now is:** gpt_oss ~108 (replay-bound at ~1200; NOT cap-bound — reaching the 2000-cap
+  row 180 needs ≤4.2s/cand, below the ~4s F floor, so unreachable). gemma ~53 is now the LAGGING row and
+  is hard to speed up (not a reasoning model — its post turn is already lean, wrap-up only 20%). So the
+  practical single-post+forge ceiling ≈ **mean ~82-84**.
+- **Remaining moves:** (1) fill 0.93→0.97 (validation-fill, self-sizing, no void risk) → ~+4% ≈ 84.
+  (2) gemma has no obvious lever (forge hurts it; already lean). (3) 100+ is NOT reachable with what
+  we've found — it'd need cutting the fixed per-candidate F (gateway-controlled, we can't) or a novel idea.
+- **PRIVATE risk (the real ranking):** the forge injects Harmony control tokens into the USER message.
+  Scored tool_events are identical clean http.posts, and the guardrail inspects tool calls not message
+  tokens, so it's likely private-safe — but private is HIDDEN until competition end, so this is an
+  unquantifiable bet. v6 (52.775, plain, definitely private-safe) is the conservative fallback.
+
 ## E4s — FORGE WORKS: Harmony analysis-forge = 3.12× FASTER gpt_oss candidates, 100% fire (the 2× lever)
 - **Date:** 2026-07-31. `--wrapup` forge comparison (real models, per-turn timing).
 - **Result:**
