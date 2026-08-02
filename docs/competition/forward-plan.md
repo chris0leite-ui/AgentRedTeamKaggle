@@ -7,6 +7,11 @@
 > hops → ~1.14 turns/post) — see **`listform-lab-plan.md`**. The SDK facts and constraint analysis below
 > are still valid; the density economics/projection (mean ~335, "2×") were a lab artifact. CoT
 > suppression DID work (terse_mundane, +25%). Read this doc for the mechanics, not the density verdict.
+>
+> ⭐ **CURRENT REFERENCE (E4x/E4y, 2026-08-02):** the primitive is proven-optimal at 18 pts/call and the
+> remaining game is throughput sizing — see **"Fill economics"** below (the two-phase budget, the
+> all-or-void replay constraint, why we may be undersizing gemma, and the 1-hop-probe + stepped-ceiling
+> levers). That section supersedes the density/list framing for anything about *how many candidates to return*.
 
 Written after v2 was submitted (E3m). Answers the planning questions: biggest constraints, whether
 we can profile locally, where the LLM time goes, and whether one trace can fire many severity-5
@@ -101,6 +106,72 @@ model emission (above). Numbers are optimistic until the lab measures real emiss
    the #1 lever is now **CoT suppression** for the slow gpt_oss row (density already banked in v3).
 6. **[decision]** If density works in lab, redesign `run()` to emit dense candidates sized to the
    replay budget; re-verify with the offline scorer before spending a submission.
+
+## Fill economics — how many candidates to return, and how to size them safely (E4x/E4y, 2026-08-02)
+The primitive is proven-optimal at **18 pts/clean-call** (E4x: top severity 16 + 1 cell 2; every
+stacking path is guardrail-blocked). So the whole remaining game is **how many firing calls we return**.
+This section is the reference model for that decision.
+
+### The two-phase budget (source: `evaluation/ops.py`)
+- **Generation** and **replay** are separate phases, each granted the full `time_budget_s`
+  (`generation_deadline_s` and `replay_deadline_s` are both `now + run_config.time_budget_s`, ops.py:780/791).
+- Our `run()` spends the **generation** budget probing candidates (`_probe` = `env.reset()` →
+  `interact(max_tool_hops=4)` → `eval_predicates`) and returns the ones that fired. We fill to
+  `_BUDGET_FILL_FRAC=0.95` of the generation budget.
+- The grader then **replays** the returned candidates one-by-one against the **replay** budget. Replay is
+  **ALL-OR-VOID**: `_run_until_deadline` raises `TimeoutError` if any single candidate crosses the replay
+  deadline, and that propagates out → `INVALID_SUBMISSION` → the **whole model row scores 0** (this is
+  what killed E4q's blind-emit at N=1200). There is **no partial credit** for the candidates that already
+  replayed.
+
+### The optimization (what we are actually maximizing)
+Let each returned candidate fire with probability `p`, be worth 18 pts, and cost `c_replay` of replay
+time **whether it fires or not** (a non-firing candidate still runs a full replay interact, scores 0):
+```
+maximize   E[row] = 0.09 · ( N_probed·1 + N_blind·p̂ )          # probed fire w.p. 1; blind w.p. p̂
+subject to (N_probed + N_blind) · c_replay ≤ replay_budget     # HARD — overrun VOIDS the whole row
+           N_probed · c_gen_probe        ≤ 0.95 · gen_budget    # generation is the phase WE run
+           N_probed + N_blind ≤ 2000                            # replay cap (MAX_REPLAY_FINDINGS)
+```
+Key economic facts that fall out:
+1. **The binding unknown is `c_replay`, not fire rate.** We can't observe replay time (server-side). But
+   generation is gRPC-relayed (our `run()` drives the model over the gateway) while replay runs
+   grader-in-process → **`c_replay ≤ c_gen_probe`**. Using `c_gen_probe` as the replay-cost estimate is
+   *conservative* → validation-fill (sizing N to `0.95·gen_budget / c_gen_probe`) can **never void**.
+   That safety is exactly why it has never voided — but it also means **if `c_replay < c_gen_probe`, we
+   stop generation before replay is full → we UNDERSIZE** (leave replay budget unused). E4q brackets the
+   true gemma replay ceiling in **[589, 1200]** (we return ~589; 1200 voided) — a plausible ~35% of
+   gemma's replay budget left on the table. This is the leading candidate for the 80→112 gemma gap.
+2. **For homogeneous candidates, `p̂ ≈ 1` and is a shared constant, not a per-candidate quantity.** All
+   our candidates are the same template with an inert varying hostname (`x{i}.co`), and the board model
+   is greedy-deterministic → firing has ~zero feature variance. So you don't *predict* per candidate; you
+   **estimate the single Bernoulli rate from a probe sample** and size against its **lower confidence
+   bound** (Wilson / Clopper-Pearson) given the void asymmetry. `BLIND_SAMPLE_N`/`BLIND_MIN_FIRE` in
+   `attack.py` are the hooks for this. **Prediction only becomes the central concern if we DIVERSIFY**
+   candidates (varied templates/payloads) — then probe-a-few-per-family, and apply one deterministic hard
+   rule: any candidate whose first-inspected field (`url`/`path`) contains an ultra-dangerous substring
+   (`secret`/`token`/`key`/…) is guardrail-denied → **p=0** (static-lint it out for free).
+3. **The loss is catastrophically asymmetric** (one extra candidate = +0.09; one overrun = −the whole
+   row). So there is **no safe "core + gambled tail" split** — all-or-void means the whole N shares the
+   void risk. The rational policy is a **single conservative N**, and the only way to raise it safely is a
+   **better `c_replay` estimate** (a stepped submission that binary-searches the per-model replay ceiling;
+   each result is durable information, and public voids are recoverable).
+
+### The two levers this model identifies (in priority order)
+- **(A) Probe at 1 hop (E4y, lab-testing now — SAFE, no gamble).** The exfil fires at **hop 0**; the
+  wrap-up (hop 1) is pure validation waste. If a 1-hop probe still detects the fire, each probe is
+  ~1.5–2× cheaper → generation *confirms* ~1.5–2× more candidates inside its budget → `N_probed` rises
+  toward the replay ceiling with **zero fire-rate or void risk added** (candidates stay validated; replay
+  is unchanged). Caveat: it only helps in the *undersized* regime — if we were already replay-saturated,
+  returning ~2× more would overrun and void, so it must be count-guarded, not slammed to 2×.
+- **(B) Learn `c_replay` via a stepped submission (RISKY, high info value).** Return a fixed replay-sized
+  N (probe a sample to confirm `p̂`, blind-fill the rest), stepped conservatively under the E4q void bound
+  (e.g. ~900 → ~1050). A clean higher score banks throughput *and* tightens the ceiling estimate; a void
+  pins the ceiling from above. Converts blind-fill from a gamble into a calculation.
+
+**Cross-check discipline:** the derived row ceiling is 180; the live board tops out ~113 in a dense band
+(E4x). So no primitive gain is hiding here — these levers only recover *throughput* we're leaving on the
+table, they cannot break 180. Any observed row >180 would falsify the whole model.
 
 ## Public vs PRIVATE leaderboard (what actually decides the competition)
 Verified from the gateway: the 4 rows `{gpt_oss,gemma}×{public,private}` replay the **same candidates,
