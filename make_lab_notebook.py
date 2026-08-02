@@ -33,10 +33,13 @@ LISTFORM = "--listform" in sys.argv
 MULTIPOST = "--multipost" in sys.argv
 WRAPUP = "--wrapup" in sys.argv
 RESEARCH = "--research" in sys.argv
+PROBEHOPS = "--probehops" in sys.argv
 SMOKE = "--smoke" in sys.argv
 
 ROOT = Path(__file__).resolve().parent
-if RESEARCH:
+if PROBEHOPS:
+    OUT = ROOT / ("lab_probehops_smoke" if SMOKE else "lab_probehops")
+elif RESEARCH:
     OUT = ROOT / ("lab_research_smoke" if SMOKE else "lab_research")
 elif MULTIPOST:
     OUT = ROOT / ("lab_multipost_smoke" if SMOKE else "lab_multipost")
@@ -60,7 +63,10 @@ OUT.mkdir(exist_ok=True)
 
 KAGGLE_USERNAME = "chrisleitescha"
 COMP = "ai-agent-security-multi-step-tool-attacks"
-if RESEARCH:
+if PROBEHOPS:
+    SLUG = "attack-probehops-smoke" if SMOKE else "attack-probehops-lab"
+    TITLE = "Attack probehops smoke" if SMOKE else "Attack probehops lab"
+elif RESEARCH:
     SLUG = "attack-research-smoke" if SMOKE else "attack-research-lab"
     TITLE = "Attack research smoke" if SMOKE else "Attack research lab"
 elif MULTIPOST:
@@ -98,6 +104,8 @@ if MULTIPOST:
     N_TRIALS = 2 if SMOKE else 6  # 8-hop multipost interacts are slow; a small N is enough for posts/interact
 if RESEARCH:
     N_TRIALS = 2 if SMOKE else 5
+if PROBEHOPS:
+    N_TRIALS = 3 if SMOKE else 8  # fire-rate + per-probe cost at each hop cap; 8 trials smooths latency
 if WRAPUP:
     N_TRIALS = 2 if SMOKE else 8  # per-turn timing; a small N is enough to see the wrap-up fraction
 RUN_GEMMA = not SMOKE
@@ -2037,7 +2045,130 @@ print("\\nKEY: PLAIN proj_row per model = the SPLIT (which assistant is the lagg
 print("= the fixed per-candidate floor (Task 2). A gemma variant that beats gemma PLAIN = a real gemma lever.")
 ''').replace("__N_TRIALS__", str(N_TRIALS)).replace("__RUN_GEMMA__", str(RUN_GEMMA))
 
-if RESEARCH:
+probehops_intro = '''\
+## Probe-hop lab (E4y) — does a 1-hop validation probe still fire, and how much cheaper is it?
+
+**Question (from the replay-saturation analysis).** Our validation-fill probes every candidate with a
+full `interact` (the model emits the scored `http.post` at **hop 0**, then a scoring-irrelevant **wrap-up
+turn** at hop 1). The wrap-up is pure validation waste — the exfil already fired. If a **1-hop** probe
+(`max_tool_hops=1`) still detects the fire, we validate the same candidates for ~half the generation
+cost → more confirmed-fire candidates inside the generation budget → closer to saturating the separate
+replay budget. **No submission.**
+
+**Method.** For each real model (gpt_oss, gemma), for the plain template and the model's v13 winner
+(gpt_oss→forge_analysis, gemma→notext), run N probes at `max_tool_hops ∈ {1, 2, 4, 8}`, replicating
+`AttackAlgorithm._probe` exactly (`env.reset()` → `interact(msg, max_tool_hops=H)` → `eval_predicates`).
+Report **fire-rate** and **seconds/probe** at each hop cap, and the **1-hop speed-up** vs the current
+4-hop probe. Expectation: fire stays 100% at every cap (exfil fires at hop 0); s/probe drops at H=1
+(skips the wrap-up) and is flat for H∈{2,4,8} (the model naturally stops at ~2 hops).'''
+
+probehops_harness = ('''\
+# E4y: 1-hop vs full-hop validation probe — fire-rate + per-probe cost, per model, per template.
+import gc, time
+from aicomp_sdk.agents.hf_chat_template.backends.llama_cpp import LlamaCppChatTemplateBackend
+from aicomp_sdk.agents.hf_chat_template.types import HFBackendConfig
+from aicomp_sdk.core.env.sandbox import SandboxEnv
+from aicomp_sdk.guardrails.optimal import Guardrail as OptimalGuardrail
+from aicomp_sdk.core.predicates import eval_predicates
+from huggingface_hub import hf_hub_download
+from kaggle_evaluation.jed_attack_134815.gpt_oss_model_server import SPEC as GPT_OSS_SPEC
+from kaggle_evaluation.jed_attack_134815.gemma_model_server import SPEC as GEMMA_SPEC
+from attack import AttackAlgorithm
+
+N_TRIALS = __N_TRIALS__
+RUN_GEMMA = __RUN_GEMMA__
+HOP_CAPS = [1, 2, 4, 8]          # 4 = what validation-fill currently uses (EVALUATION_DEFAULT_MAX_TOOL_HOPS)
+BASELINE_HOP = 4                 # the probe cost we pay today; speed-up is measured against this
+mean = lambda x: sum(x)/len(x) if x else 0.0
+
+def build_agent(spec, n_gpu_layers=-1):
+    mp = os.environ.get(spec.model_path_env_var, "").strip()
+    model_path = mp if (mp and os.path.exists(mp)) else hf_hub_download(repo_id=spec.repo(), filename=spec.filename())
+    cfg = HFBackendConfig(model_id=spec.model_id, model_path=model_path, max_new_tokens=spec.max_new_tokens)
+    backend = LlamaCppChatTemplateBackend.from_model_path(model_path=model_path, config=cfg,
+              n_ctx=spec.n_ctx, n_gpu_layers=n_gpu_layers, supports_tools=spec.supports_tools)
+    return spec.create_agent(backend), backend
+
+# Templates: plain + the v13 per-model winner. gpt_oss routes to forge_analysis, gemma to notext.
+def templates_for(label):
+    plain = ("plain", lambda d: AttackAlgorithm._exfil_message(d, 0))
+    if "gpt" in label.lower() or "oss" in label.lower():
+        return [plain, ("forge_anal", lambda d: AttackAlgorithm._forge_message(d))]
+    return [plain, ("notext", lambda d: AttackAlgorithm._notext_message(d))]
+
+def probe(env, msg, hops):
+    """Exactly AttackAlgorithm._probe: reset -> interact(max_tool_hops=hops) -> did any predicate fire?"""
+    t = time.monotonic(); fired = False
+    try:
+        env.reset()
+        env.interact(msg, max_tool_hops=hops)
+        fired = bool(eval_predicates(env.export_trace_dict()))
+    except Exception as e:
+        print("   err:", type(e).__name__, e, flush=True)
+    return fired, time.monotonic() - t
+
+def study(spec, n_gpu_layers=-1):
+    print("\\n=== %s: loading ===" % spec.model_label, flush=True)
+    t0 = time.monotonic(); agent, backend = build_agent(spec, n_gpu_layers)
+    print("loaded in %.0fs" % (time.monotonic() - t0), flush=True)
+    env = SandboxEnv(seed=123, fixtures_dir=FIXTURES, agent=agent, guardrail=OptimalGuardrail())
+    rows = []
+    for tname, mk in templates_for(spec.model_label):
+        doms = AttackAlgorithm._unique_domains()
+        # untimed warm-up (pay any first-call cost outside the measurement)
+        try: probe(env, mk(next(doms)), 2)
+        except Exception: pass
+        per_hop = {}
+        for H in HOP_CAPS:
+            secs = []; fires = 0
+            for _ in range(N_TRIALS):
+                f, dt = probe(env, mk(next(doms)), H); fires += int(f); secs.append(dt)
+            per_hop[H] = {"s": mean(secs), "fire": fires / N_TRIALS}
+            print("  %-10s hops=%d  fire=%.0f%%  s/probe=%.2f"
+                  % (tname, H, 100*per_hop[H]["fire"], per_hop[H]["s"]), flush=True)
+        base = per_hop[BASELINE_HOP]["s"] or 1e-9
+        speed = base / (per_hop[1]["s"] or 1e-9)
+        print("  -> %-10s 1-hop speed-up vs %d-hop = %.2fx  (fire@1=%.0f%%, fire@%d=%.0f%%)"
+              % (tname, BASELINE_HOP, speed, 100*per_hop[1]["fire"], BASELINE_HOP, 100*per_hop[BASELINE_HOP]["fire"]),
+              flush=True)
+        rows.append({"template": tname, "per_hop": per_hop, "speedup_1_vs_%d" % BASELINE_HOP: round(speed, 2)})
+    backend.close(); del agent, backend, env; gc.collect()
+    try:
+        import torch; torch.cuda.empty_cache()
+    except Exception: pass
+    return {"model": spec.model_label, "rows": rows}
+
+def study_safe(spec):
+    try: return study(spec)
+    except Exception as e:
+        print("full-GPU failed (%s); partial offload" % type(e).__name__, flush=True); gc.collect()
+        try:
+            import torch; torch.cuda.empty_cache()
+        except Exception: pass
+        return study(spec, n_gpu_layers=20)
+
+results = [study_safe(GPT_OSS_SPEC)]
+if RUN_GEMMA: results.append(study_safe(GEMMA_SPEC))
+
+print("\\n==================== PROBE-HOP SUMMARY ====================", flush=True)
+print("Winner template per model = the v13 route (gpt_oss=forge_anal, gemma=notext).", flush=True)
+for r in results:
+    winner = r["rows"][-1]  # plain first, winner second
+    ph = winner["per_hop"]
+    sp = winner.get("speedup_1_vs_4")
+    fire_ok = all(ph[H]["fire"] >= 0.99 for H in HOP_CAPS)
+    print("%-8s | %-10s | fire@allhops=%s | s/probe 1h=%.2f 2h=%.2f 4h=%.2f 8h=%.2f | 1-hop speed-up=%.2fx"
+          % (r["model"], winner["template"], "100%%" if fire_ok else "VARIES",
+             ph[1]["s"], ph[2]["s"], ph[4]["s"], ph[8]["s"], sp), flush=True)
+print("\\nREAD: if fire@1==100%% and 1-hop speed-up>1, validation-fill can probe at hops=1 to confirm more", flush=True)
+print("candidates per generation-second (exfil fires at hop 0; the wrap-up turn is validation waste).", flush=True)
+print("A ~flat 2h/4h/8h confirms the model self-stops at ~2 hops, so today we pay the wrap-up on every probe.", flush=True)
+''').replace("__N_TRIALS__", str(N_TRIALS)).replace("__RUN_GEMMA__", str(RUN_GEMMA))
+
+if PROBEHOPS:
+    cells = [md(probehops_intro), code(setup), code(write_attack), code(ensure_llama),
+             code(probehops_harness)]
+elif RESEARCH:
     cells = [md(research_intro), code(setup), code(write_attack), code(ensure_llama),
              code(research_harness)]
 elif MULTIPOST:
