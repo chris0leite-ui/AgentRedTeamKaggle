@@ -7,14 +7,16 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
 v5 36.81 → v6 lean 52.775 → **v12 forge 80.705** (full detail in `experiments.md` E4l→E4t). mean 80.705
 = gpt_oss ~108 (Harmony analysis-forge → ~2× more candidates) + gemma ~53 (auto-routed to plain).
 `attack.py` FORGE_MODE=True (calibrate plain-vs-forge → keep faster → validation-fill; self-sizes, no overrun).
-- [ ] **Next safe bump: fill 0.93→0.97** (self-sizing, no void risk) → projects ~84.
+- [ ] **v13: add `notext` to the auto-router (plain/forge/notext, keep fastest per model) + fill 0.97.**
+  Projects ~89-94 (E4u). gpt_oss→forge (0.72s), gemma→notext (0.93s vs plain 1.16s).
 - [ ] **PRIVATE-guardrail robustness = the real open question** (final rank is on the hidden PRIVATE
   board). The forge injects Harmony tokens into the USER message; scored tool_events are identical clean
   http.posts (guardrail inspects tool calls, not message text) → *likely* private-safe but untestable.
   **v6 (52.775, plain) is the definitely-private-safe fallback.**
-- **Practical ceiling ≈ 84** (single-post+forge): gpt_oss replay-bound ~1200 (can't hit the 2000-cap /
-  row 180 — needs ≤4.2s/cand < the ~4s fixed env-build floor); gemma ~53 is the lagging row, no lever
-  (not a reasoning model, already lean). 100+ needs cutting the gateway's per-candidate overhead (can't).
+- **CEILING ~84 REFUTED (E4u).** Direct measurement: env build+reset = 0.16 s (not ~4 s); the split is
+  INVERTED (gpt_oss is the SLOW/reasoning row ~36 plain, gemma is FAST ~70); and gemma HAS a lever
+  (**notext** = 1.25× faster). **v13 plan: auto-route plain/forge/NOTEXT → gpt_oss=forge, gemma=notext,
+  fill 0.97 → projects ~89-94.** Real headroom toward the ~112 leaders.
 - **Refuted/closed (don't re-litigate):** blind-emit (E4q, N=1200 voided → replay≈generation, no
   asymmetry); multi-post (E4p, 33% fire / forge-only ~1.1×); dense-multi (E4i); list-form (E4k).
 

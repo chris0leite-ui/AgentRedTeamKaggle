@@ -1,6 +1,11 @@
 # Assumptions
 
 Every belief our current approach rests on, with how sure we are and how we'd know if it's wrong.
+> **CORRECTED BY E4u (2026-08-02).** Direct measurement overturned three earlier inferences: the fixed
+> per-candidate cost is TINY (env build+reset = 0.16 s, not ~4 s); the per-model split is INVERTED
+> (gpt_oss is the SLOW row, gemma the FAST one); and gemma HAS a speed lever (notext, 1.25×). The ~84
+> ceiling is refuted. Rows C3/C5/C6 and section D below are re-annotated; see experiments.md E4u.
+
 Status key: **VERIFIED** (checked against source code or a real submission) · **REFUTED** (tested and
 false) · **UNVERIFIED** (plausible, relied upon, but not yet proven) · **UNKNOWABLE** (cannot be
 tested before the contest ends). Plain-English background is in `how-it-works.md`; evidence is in
@@ -35,7 +40,7 @@ tested before the contest ends). Plain-English background is in `how-it-works.md
 | C2 | A simple attempt costs **two hops**, and the second ("wrap-up") hop earns no points — it is pure overhead. | VERIFIED | Per-hop timing lab (E4r): every attempt is exactly two model turns, the second is a no-score final answer. |
 | C3 | The gpt_oss assistant spends a large share (~44%) of each attempt on **hidden reasoning**, which the reasoning-off trick can remove. | VERIFIED | Per-hop timing lab (E4r/E4s): forge cut gpt_oss from ~2.34 s to ~0.75 s per attempt in the lab (3.12×), fire rate stayed 100%. |
 | C4 | The **generation phase and the replay phase cost about the same** per attempt, so validation-filling to the generation clock automatically keeps replay inside its budget. | VERIFIED (with one correction) | We tested the opposite hypothesis — that replay was much faster and we were under-filling — by returning 1,200 attempts blindly; replay **overran and voided** (E4q). Conclusion: replay ≈ generation, and validation-filling is the safe way to size. |
-| C5 | A lab speed-up **partly** transfers to the real board: the ~3× lab forge speed-up became ~2× on the leaderboard, because each attempt also pays a **fixed set-up cost (~4 seconds)** the trick cannot remove. | VERIFIED | v12 scored 80.705 → gpt_oss got ~2× more attempts, not ~3× (E4t back-calculation). This fixed cost is the current ceiling. |
+| C5 | ~~A ~4 s fixed set-up cost per attempt caps us at ~84.~~ **CORRECTED (E4u):** the fixed cost (env build+reset) is **0.16 s**, negligible. The lab→board dilution (~3× → ~2×) is a large **~9-11× real-board per-interact overhead** (relay/inference conditions, NOT env-build), roughly uniform across models. Per-candidate cost is ~all model generation, which the forge/notext levers reduce. | CORRECTED | Measured directly (E4u). No ~84 ceiling. |
 | C6 | We **cannot** put multiple scored requests into one attempt. Only one tool call is allowed per hop, and the models will not reliably emit many requests across hops (gpt_oss ~33% fire on a multi-request message; gemma emits exactly one). | REFUTED as a lever | Multi-request lab (E4p) and list-form lab (E4k). Bundling many messages just pays the fixed set-up cost repeatedly (dense line, E4i). |
 
 ## D. The hidden (private) guardrail — the real ranking

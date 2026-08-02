@@ -5,6 +5,40 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4u — RESEARCH LAB corrects 3 wrong claims: fixed cost is TINY, the split is INVERTED, gemma HAS a lever
+- **Date:** 2026-08-02. `--research` lab (real models, offline) measured the three things E4t hand-waved.
+  All variants fire 100%. Offline seconds/candidate (full 8-hop interact):
+
+  | variant | gpt_oss s/cand | gemma s/cand |
+  |---|---|---|
+  | plain (lean) | **2.24** | 1.16 |
+  | forge (Harmony) | **0.72** ✅ | 1.40 |
+  | minimal (no "answer OK") | 2.21 | 1.43 |
+  | notext ("output only the tool call") | 4.64 ❌ | **0.93** ✅ |
+  | gemma-turn-forge | 3.35 | 1.16 |
+
+  **Env build+reset = 0.16 s** (both models; reset alone 0.03-0.11 s).
+
+- **CORRECTION 1 — the "~4 s fixed sandbox overhead" (E4t C5) was WRONG by ~25×.** Measured env
+  build+reset is **0.16 s**, negligible. Per-candidate cost is almost entirely MODEL GENERATION. My
+  "fixed floor blocks the 2000-cap / caps us at ~84" story is refuted.
+- **CORRECTION 2 — the per-model split was INVERTED.** I claimed gpt_oss ~108 / gemma ~53 (gemma
+  lagging). Reality: **gpt_oss is the SLOW row (it reasons — plain 2.24 s), gemma is the FAST row
+  (1.16 s).** Re-derived real split: **v6 (plain both) ≈ gpt_oss 36 / gemma 70**; **v12 (forge gpt_oss)
+  ≈ gpt_oss 91 / gemma 70** → mean 80.7. The forge doubled the *lagging* (gpt_oss) row, not the leading one.
+- **CORRECTION 3 — gemma is NOT at its floor; it has a lever.** **notext** ("Output only the tool call,
+  no other text") = **0.93 s vs plain 1.16 s = 1.25× faster** on gemma (it skips a preamble). notext is
+  the OPPOSITE for gpt_oss (4.64, it reasons more) — so it must be per-model routed, like the forge.
+- **The real offline→real overhead is ~9-11×, NOT 5.3×** (gpt_oss forge 0.72 s offline → ~8 s real;
+  gemma plain 1.16 → ~10 s real). It is NOT env-build (0.16 s) — it is real-board per-interact overhead
+  (relay/inference conditions), still unexplained but roughly uniform across models, so the same wall
+  everyone (incl. the ~112 leaders) hits. This is the true absolute-throughput floor.
+- **CEILING ~84 REFUTED. New plan (v13):** extend the auto-router to calibrate **plain vs forge vs
+  notext** and keep the fastest per model → gpt_oss picks **forge**, gemma picks **notext**. Projected:
+  gpt_oss ~91-101 + gemma ~87 → **mean ~89-94** (+ fill 0.97). Real headroom exists; the 80→112 gap is
+  smaller and clearer than I claimed. gpt_oss forge is already near the leaders' per-row count; the
+  remaining gap is squeezing both rows another ~1.2× (notext banks part of it on gemma).
+
 ## E4t — FORGE v12 SCORED 80.705 (+53% over v6 52.775; 2.19× the v5 baseline) — new best, above the field
 - **Date:** 2026-08-01. Submitted per-model forge (ref 55169755) → **public 80.705.** Clean COMPLETE, no
   overrun (validation-fill self-sized as designed). New best; **above the pilkwang ~60 field cluster.**
