@@ -17,10 +17,10 @@ OUT.mkdir(exist_ok=True)
 
 KAGGLE_USERNAME = "chrisleitescha"  # kernel owner (lowercased Kaggle handle)
 COMP = "ai-agent-security-multi-step-tool-attacks"
-SLUG = "attack-router-v13"  # v13 (E4u): plain/forge/notext auto-router + fill 0.95
-# host + fill 0.93. Slugs v6-v9 are taken by the dead dense line, so this uses v10. terse->lean.
+SLUG = "attack-1hop-gemma-v14"  # v14 (E4y): gemma fill probes at 1 hop → ~1.32× more candidates, TESTS
+# gemma replay headroom (relay gap). gpt_oss unchanged/safe. ONE_HOP_GEMMA_FILL=True in attack.py.
 # Kaggle derives the slug from the TITLE, so keep the title slug-clean and matching SLUG.
-TITLE = "Attack router v13"
+TITLE = "Attack 1hop gemma v14"
 
 attack_src = (ROOT / "attack.py").read_text()
 
