@@ -5,6 +5,43 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4w — RESEARCH LAB v2 A/B: the two web-surfaced levers (forge_comm, gemma_tc) are BOTH REFUTED
+- **Date:** 2026-08-02. `--research` v2 (real models, offline) A/Bs the E4v web hypotheses against our
+  current v13 config. All 7 variants fire 100%. Offline seconds/candidate + projected row (proj row is
+  offline-optimistic; ~2× the real board — apply the E4u ~9-11× overhead haircut):
+
+  | variant | gpt_oss s/cand | gpt_oss proj row | gemma s/cand | gemma proj row |
+  |---|---|---|---|---|
+  | plain (lean) | 2.27 | 60.6 | 1.18 | 116.8 |
+  | **forge_anal** (v12/v13 gpt_oss) | **0.73** ✅ | **180.0 (cap)** | 1.41 | 97.4 |
+  | forge_comm (E4v web lever) | 2.32 ❌ | 59.1 | 1.46 | 94.0 |
+  | forge_full | 0.79 | 173.9 | 1.50 | 91.7 |
+  | **notext** (v13 gemma) | 10.52 ❌ | 13.0 | **0.94** ✅ | **146.0** |
+  | gemma_tc `<|tool_call>` (E4v web lever) | 2.55 | 53.9 | 1.47 ❌ | 93.5 |
+  | gemma_turn `<|turn>` | 3.92 | 35.0 | 0.94 | 146.2 |
+
+- **LEVER 1 REFUTED — forge_comm does NOT beat forge_anal on gpt_oss.** The web said tool calls belong
+  on the `commentary` channel; forcing it (`…<|start|>assistant<|channel|>commentary<|message|>`) was
+  **3.2× SLOWER** (2.32 vs 0.73) — it does NOT suppress reasoning. What suppresses reasoning is the
+  **empty `analysis` channel** (forge_anal), which we already ship. The web fact was correct about
+  *where tool calls go*, but that is orthogonal to *throughput* — the empty-analysis prefill is the win.
+- **LEVER 2 REFUTED — gemma_tc (`<|tool_call>` prefill) does NOT beat notext.** 1.47 vs 0.94 s/cand
+  (row 93.5 vs 146.0). The corrected gemma-4 token was real (it fired, unlike the E4u gemma-3 tokens
+  that did nothing), but prefilling it is SLOWER than just asking for text-free output (notext).
+  gemma_turn ties notext exactly (0.94, 146.2) — no gain over notext, more fragile.
+- **NET: v13's config (gpt_oss→forge_anal, gemma→notext) is CONFIRMED OPTIMAL among all 7 variants.**
+  The web research corrected my *understanding* (right channel, right tokens) but neither new lever
+  *converts to throughput*. **There is NO v14 improvement from these variants** — v13 already banks
+  both winners. The auto-router (calibrate → keep fastest per model) would pick exactly these anyway.
+- **Reproducibility check:** forge_anal 0.73 (E4u 0.72), gemma notext 0.94 (E4u 0.93), gpt_oss notext
+  10.52 (E4u 4.64 — same direction, notext badly hurts gpt_oss). Lab is stable.
+- **SPLIT (PLAIN proj rows):** gpt_oss 60.6 vs gemma 116.8 offline → gpt_oss is the lagging row,
+  gemma the leading row (confirms the E4u inversion). Forge lifts the *lagging* gpt_oss row to the cap.
+- **NEXT:** await v13's real score (validates whether notext converts gemma 70→~87 on the board). If
+  v13 ≥ v12, v13 is the new best and the single-post+per-model-forge line is fully mined — remaining
+  headroom is only fill-fraction (self-sizing, marginal) and the untouchable ~2× real overhead. The
+  open lever is a *different primitive* (2nd predicate type) or the PRIVATE-guardrail robustness bet.
+
 ## E4v — WEB RESEARCH (first time; sourced): corrects 2 mistakes + surfaces 2 new levers
 - **Date:** 2026-08-02. First web research (prior work was SDK source + competitor kernels + labs only).
   Full sourced brief in the agent transcript; key points:

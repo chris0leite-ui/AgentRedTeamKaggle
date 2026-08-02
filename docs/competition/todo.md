@@ -7,8 +7,12 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
 v5 36.81 → v6 lean 52.775 → **v12 forge 80.705** (full detail in `experiments.md` E4l→E4t). mean 80.705
 = gpt_oss ~108 (Harmony analysis-forge → ~2× more candidates) + gemma ~53 (auto-routed to plain).
 `attack.py` FORGE_MODE=True (calibrate plain-vs-forge → keep faster → validation-fill; self-sizes, no overrun).
-- [ ] **v13: add `notext` to the auto-router (plain/forge/notext, keep fastest per model) + fill 0.97.**
-  Projects ~89-94 (E4u). gpt_oss→forge (0.72s), gemma→notext (0.93s vs plain 1.16s).
+- [ ] **v13: notext auto-router — SUBMITTED (ref 55185855), scored rerun PENDING.** Projects ~89-94
+  (E4u). gpt_oss→forge (0.73s), gemma→notext (0.94s vs plain 1.18s). Awaiting the board score.
+- **E4v WEB LEVERS BOTH REFUTED (E4w A/B).** `forge_comm` (commentary channel) = 3.2× SLOWER than our
+  `forge_anal` on gpt_oss (0.73 stays the winner); `gemma_tc` (`<|tool_call>` prefill) = SLOWER than
+  `notext` on gemma (row 93.5 vs 146.0). **v13's config (gpt_oss=forge_anal, gemma=notext) is confirmed
+  optimal across all 7 variants → NO v14 from these.** Web corrected understanding, not throughput.
 - [ ] **PRIVATE-guardrail robustness = the real open question** (final rank is on the hidden PRIVATE
   board). The forge injects Harmony tokens into the USER message; scored tool_events are identical clean
   http.posts (guardrail inspects tool calls, not message text) → *likely* private-safe but untestable.
