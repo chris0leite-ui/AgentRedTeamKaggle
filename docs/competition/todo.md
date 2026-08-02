@@ -3,6 +3,22 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
+**CURRENT BEST: v12 forge = 80.705** (E4t, 2026-08-01) — above the pilkwang ~60 field cluster. Arc:
+v5 36.81 → v6 lean 52.775 → **v12 forge 80.705** (full detail in `experiments.md` E4l→E4t). mean 80.705
+= gpt_oss ~108 (Harmony analysis-forge → ~2× more candidates) + gemma ~53 (auto-routed to plain).
+`attack.py` FORGE_MODE=True (calibrate plain-vs-forge → keep faster → validation-fill; self-sizes, no overrun).
+- [ ] **Next safe bump: fill 0.93→0.97** (self-sizing, no void risk) → projects ~84.
+- [ ] **PRIVATE-guardrail robustness = the real open question** (final rank is on the hidden PRIVATE
+  board). The forge injects Harmony tokens into the USER message; scored tool_events are identical clean
+  http.posts (guardrail inspects tool calls, not message text) → *likely* private-safe but untestable.
+  **v6 (52.775, plain) is the definitely-private-safe fallback.**
+- **Practical ceiling ≈ 84** (single-post+forge): gpt_oss replay-bound ~1200 (can't hit the 2000-cap /
+  row 180 — needs ≤4.2s/cand < the ~4s fixed env-build floor); gemma ~53 is the lagging row, no lever
+  (not a reasoning model, already lean). 100+ needs cutting the gateway's per-candidate overhead (can't).
+- **Refuted/closed (don't re-litigate):** blind-emit (E4q, N=1200 voided → replay≈generation, no
+  asymmetry); multi-post (E4p, 33% fire / forge-only ~1.1×); dense-multi (E4i); list-form (E4k).
+
+## Superseded backlog (history)
 - [x] ~~**FILL-STRATEGY REWORK**~~ **DONE → v6 = 52.775 (E4n, +43% over 36.81).** Lean pilkwang-style
   86-char single-post + short host + fill 0.93; fire 100% both models, ~1.4-1.6x cheaper/cand. The
   lean-candidate lever CONVERTS on the board (per-candidate cost is generation-sensitive, not fixed-
@@ -60,16 +76,15 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
   offline; proved dense replay is valid (failure was scale). Reusable tool.
 
 ## Reality anchors (real-board, measured)
-- **Best real score: v5 single-post terse = 36.81** (safe). Real single-post fits ~409 candidates/row
-  (~20s/cand real). Prior: v1 0.090 · trivial 0.450 · v2 29.34 · v6 dense(cap20) 11.84.
+- **Best real score: v12 forge = 80.705** (E4t). Arc: v2 29.34 · v5 single-post terse 36.81 · v6 lean
+  52.775 · **v12 per-model Harmony-forge 80.705**. gpt_oss ~108 (forge, ~1200 cand) + gemma ~53 (plain).
 - **Dense-multi = DEAD END (E4i):** v3/v4/v7/v8/v9 all overran/zeroed; it's K single-posts bundled at
   2 turns/post (no gain) with real overhead ~8×. Ship single-post.
 - **Fire rate ~100%, deterministic** (greedy) — E3s. The wall is THROUGHPUT (seconds-per-post).
-- **Reaching the ~110 top needs ~3× throughput — but every public lever is now exhausted:** dense-multi
-  (E4i) and list form (E4k) both refuted on the real models. gemma refuses multi-post-per-message
-  (1 call/msg, unbudgeable); gpt_oss list gives only ~1.15× (gemma-capped → ~1.07× mean). **Public
-  throughput has plateaued at ~37.** The remaining axis is the PRIVATE guardrail (robustness, not
-  throughput) — the real ranking lever. See E4k.
+- **Throughput plateau BROKEN (E4t):** the Harmony analysis-forge cut gpt_oss's per-candidate reasoning
+  ~2× → v12 = 80.705 (above the ~60 field cluster). Multi-post levers (dense E4i, list E4k) stay refuted.
+  Practical ceiling now ~84 (gemma-bound + fixed per-candidate overhead). The remaining axis is the
+  PRIVATE guardrail (robustness of the forge, untestable until end) — the real ranking lever.
 
 ## Next
 - [ ] **Profile per-turn token/latency in the offline scorer** (Q3): record llama.cpp `t_eval_ms` +

@@ -108,7 +108,8 @@ _TAIL_MARGIN = 2.0
 # raw/candidate of single-post (0.59 vs 0.09 real/cand at v6), so a safely-sized dense run projects
 # well above single-post. K stays 7 (E4c).
 DENSITY_MODE = False  # E4i: dense (multi) is a dead end (v7/v8/v9 all overran; no real efficiency
-# gain — it's 7 single-posts bundled at 2 turns/post). Single-post terse (v5) = 36.81 is our safe best.
+# gain — it's 7 single-posts bundled at 2 turns/post). SUPERSEDED: best is now v12 per-model Harmony-forge
+# = 80.705 (E4t); FORGE_MODE below is the active mode. Single-post terse (v5) 36.81 / lean (v6) 52.775 were prior bests.
 _DENSITY_K_MIN = 7
 _DENSITY_K_MAX = 8
 

@@ -35,8 +35,8 @@ Progress by experiment, smallest test first; each logged in `experiments.md`.
   Public score = **mean(gpt_oss_public, gemma_public)**, each `row = min(1000, raw/200)`. Posts dominate
   raw, so **score ≈ throughput of successful posts** within each model's 9000s replay budget.
 - **Fire rate ~100%, deterministic** (greedy — E3s). The wall is pure **THROUGHPUT** (seconds-per-post).
-- **Real anchors:** v1 0.090 · trivial 0.450 · v2 single-post(verbose) 29.34 · **v5 single-post(terse)
-  = 36.81 (BEST, safe)** · v6 dense(cap20) 11.84. Real single-post fits ~409 candidates/row (~20s/cand).
+- **Real anchors:** v1 0.090 · trivial 0.450 · v2 single-post(verbose) 29.34 · v5 single-post(terse)
+  36.81 · v6 lean 52.775 · **v12 per-model Harmony-forge = 80.705 (BEST, E4t)**. v12: gpt_oss ~108 (forge → ~2× cand) + gemma ~53 (plain, auto-routed).
 - **CoT suppression WORKED (E4b):** the terse_mundane message cut gpt_oss CoT ~40% (fire 100%) → v5's
   +25% over v2. Near the framing floor now (residual reasoning is mechanical restatement).
 - **DENSITY IS A DEAD END (E4i) — corrects the earlier "density ~2×/mean 335" claim, which was a LAB
@@ -61,7 +61,7 @@ Progress by experiment, smallest test first; each logged in `experiments.md`.
   ranks on private → public rank ≠ private rank is a live risk, and the real prize.
 
 ## 7. Communicate / decide
-- **Shipped (best):** v5 single-post terse = **36.81**, safe (`DENSITY_MODE=False`).
+- **Shipped (best):** v12 per-model Harmony-forge = **80.705** (E4t; `FORGE_MODE=True`). Prior: v6 lean 52.775, v5 terse 36.81. PRIVATE robustness of the forge is the open risk; v6 plain is the private-safe fallback.
 - **Next gate:** build the **LIST-FORM lab** (`--listform`, no submissions) — the only path past 2
   turns/post toward ~110. Then a tiny capped list submission to test real overhead before scaling.
 - In parallel: reason about the **private guardrail** (the ranking axis) before over-investing in public.

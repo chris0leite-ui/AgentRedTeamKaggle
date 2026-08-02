@@ -59,3 +59,27 @@ across turns.
   then craft the minimal trace that clears it.
 - When score is throughput-based, **reliability (fire-rate) and cost (latency)** tend to dominate raw
   cleverness. Optimize the boring terms.
+
+
+## Throughput attacks on replay-scored agents (what actually moved the needle)
+When score = count of firing candidates within a fixed replay budget, per-candidate WALL-CLOCK is the
+whole game, and it decomposes into: (a) model generation, (b) a fixed per-candidate overhead (fresh
+env build/reset), and (c) the number of model turns. Hard-won lessons:
+- **Reasoning models waste time on scoring-irrelevant turns.** A single tool-call candidate still takes
+  a second "wrap-up" turn (the agent loop re-invokes the model after a tool call); a reasoning model
+  (e.g. Harmony/gpt_oss) burns hidden chain-of-thought on that turn even though it outputs ~nothing. Here
+  it was ~44% of each candidate. **Instrument per-hop latency** (wrap `agent.next_action`) to find it.
+- **You can suppress that reasoning by forging the reasoning channel.** Injecting an EMPTY analysis
+  channel into the user message (Harmony control tokens) makes the model skip CoT → ~3× cheaper
+  candidates, same firing. It's model-family-specific (helped the Harmony model, HURT the non-reasoning
+  one) → **auto-route with no magic threshold: probe both forms, keep whichever is faster per model.**
+- **A generation speedup is diluted by the fixed per-candidate overhead.** 3.12× on generation became
+  ~2× real because each candidate also pays a fixed env-build cost the trick can't touch. Know your
+  floor before projecting.
+- **Size the returned set to the phase that is actually slower.** We tested whether generation (which
+  may run relayed, in a separate process) was slower than the in-process replay; it was NOT (blind-
+  emitting more candidates than we probed just OVERRAN replay → whole row zeroed). Validation-fill
+  (probe each, keep if it fires) SELF-SIZES to the true cost and can't overrun — prefer it to blind
+  sizing when an overrun is catastrophic (a hard timeout that voids the whole row).
+- **Multi-action-per-candidate rarely works:** models resist emitting many tool calls per turn, and
+  bundling many messages just pays the fixed overhead N times. Verify emission in a lab before betting.
