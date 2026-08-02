@@ -9,6 +9,7 @@ Produces submission/submission.ipynb + submission/kernel-metadata.json. The note
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -23,6 +24,15 @@ SLUG = "attack-1hop-gemma-v14"  # v14 (E4y): gemma fill probes at 1 hop → ~1.3
 TITLE = "Attack 1hop gemma v14"
 
 attack_src = (ROOT / "attack.py").read_text()
+
+# `--blind=N` fires a gemma ceiling-bracket rung: embed GEMMA_BLIND_TARGET=N (attack.py's committed
+# default stays 0/safe) and give the kernel a distinct slug so each rung is its own submission.
+_blind = next((int(a.split("=", 1)[1]) for a in sys.argv[1:] if a.startswith("--blind=")), 0)
+if _blind:
+    assert "GEMMA_BLIND_TARGET = 0" in attack_src, "expected GEMMA_BLIND_TARGET=0 default to patch"
+    attack_src = attack_src.replace("GEMMA_BLIND_TARGET = 0", f"GEMMA_BLIND_TARGET = {_blind}", 1)
+    SLUG = f"attack-gemma-blind-{_blind}"
+    TITLE = f"Attack gemma blind {_blind}"
 
 
 def code(src: str) -> dict:
