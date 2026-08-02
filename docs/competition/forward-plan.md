@@ -158,12 +158,16 @@ Key economic facts that fall out:
    each result is durable information, and public voids are recoverable).
 
 ### The two levers this model identifies (in priority order)
-- **(A) Probe at 1 hop (E4y, lab-testing now — SAFE, no gamble).** The exfil fires at **hop 0**; the
-  wrap-up (hop 1) is pure validation waste. If a 1-hop probe still detects the fire, each probe is
-  ~1.5–2× cheaper → generation *confirms* ~1.5–2× more candidates inside its budget → `N_probed` rises
-  toward the replay ceiling with **zero fire-rate or void risk added** (candidates stay validated; replay
-  is unchanged). Caveat: it only helps in the *undersized* regime — if we were already replay-saturated,
-  returning ~2× more would overrun and void, so it must be count-guarded, not slammed to 2×.
+- **(A) Probe at 1 hop (E4y — MEASURED, valid).** The exfil fires at **hop 0**; the wrap-up (hop 1) is
+  pure validation waste. E4y confirmed a 1-hop probe **fires 100%** on both models and is **1.55× cheaper
+  (gpt_oss forge) / 1.32× cheaper (gemma notext)** than the 4-hop probe we pay today (2h≈4h≈8h flat ⇒ the
+  model self-stops at ~2 hops). So generation *confirms* ~1.3–1.55× more candidates inside its budget,
+  raising `N_probed` toward the replay ceiling with **no fire-rate risk** (candidates stay validated,
+  p=1). **NOT a free lever, though:** returning more candidates raises replay load ~1.3–1.55×, so it only
+  helps in the *undersized* regime (safe iff relay gap `r > 1.55`); if we were already replay-saturated it
+  would overrun and void. It must be **count-guarded** (conservative step), not slammed to the full 1.55×.
+  It is the strictly-*safest way* to increase N (only the replay-time gamble, not a misfire gamble), which
+  is why it pairs with (B) rather than replacing it.
 - **(B) Learn `c_replay` via a stepped submission (RISKY, high info value).** Return a fixed replay-sized
   N (probe a sample to confirm `p̂`, blind-fill the rest), stepped conservatively under the E4q void bound
   (e.g. ~900 → ~1050). A clean higher score banks throughput *and* tightens the ceiling estimate; a void
