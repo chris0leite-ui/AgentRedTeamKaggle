@@ -15,7 +15,9 @@ email, making web requests, running commands. A safety filter sits in front of t
 to block harmful actions. Our job is to write instructions that trick an assistant into doing a
 harmful action anyway — specifically, into **sending a secret out to the internet** — while slipping
 past the safety filter. We earn points for every harmful action we can reliably reproduce. Our best
-result so far scores **80.705** points.
+result so far scores **81.720** points. We have since *proven from the contest's own code* that our
+attack earns the maximum points any single clean action can earn, so the remaining challenge is pure
+speed, not a cleverer attack (Section 9).
 
 ---
 
@@ -61,7 +63,7 @@ flowchart TD
   M2 --> S2["Score for gemma"]
   S1 --> AVG["Final public score =<br/>the average of the two"]
   S2 --> AVG
-  AVG --> LB["Leaderboard<br/>(our best: 80.705)"]
+  AVG --> LB["Leaderboard<br/>(our best: 81.720)"]
 ```
 
 For **each** assistant the grader does two separate things, each with its own time limit of about
@@ -226,40 +228,74 @@ flowchart TB
   WT -.->|"about 3× faster in the lab"| FT
 ```
 
-Three times faster in the lab meant **about twice as many attempts on the real leaderboard** (the
-speed-up is diluted by a fixed set-up cost every attempt pays that this trick cannot remove). That is
-what lifted the gpt_oss score, taking our overall score from 52.8 to **80.7**.
+Three times faster in the lab meant **about twice as many attempts on the real leaderboard**. (Real
+attempts on the contest's machines cost several times more than in our lab because of unavoidable
+network and running overhead the trick cannot remove, so the lab's 3× shows up as roughly 2× on the
+board.) That is what lifted the gpt_oss score, taking our overall score from 52.8 to **80.7**.
 
-One important detail: this trick only helps gpt_oss, because only gpt_oss "thinks" this way. The other
-assistant, gemma, is actually *slowed down* by the same symbols. So our program is careful: at the
-start of each run it quietly tries **both** styles of message, measures which is faster, and uses the
-faster one. It picks the reasoning-off style for gpt_oss and the ordinary style for gemma
-automatically, without ever being told which assistant it is facing.
+One important detail: this trick only helps gpt_oss, because only gpt_oss "thinks" this way. gemma does
+not think, so the reasoning-off symbols only *slow it down*. gemma has a different speed-up instead: a
+plain instruction to **"output only the tool call, no other text"** stops it writing a short preamble,
+making each of its attempts a little cheaper. That third style lifted our best from 80.7 to **81.7**.
+
+So our program keeps **three** styles and, at the start of each run, quietly tries all three, times
+them, and uses the fastest — without ever being told which assistant it is facing. It lands on
+reasoning-off for gpt_oss and output-only-the-tool-call for gemma automatically.
 
 ```mermaid
 flowchart TD
-  START["Run begins (we are not told which assistant this is)"] --> CAL["Try a few ordinary messages<br/>and a few reasoning-off messages;<br/>time both"]
-  CAL --> PICK{"Which was faster?"}
-  PICK -->|"reasoning-off faster<br/>(this is gpt_oss)"| F["Use reasoning-off messages"]
-  PICK -->|"ordinary faster<br/>(this is gemma)"| P["Use ordinary messages"]
+  START["Run begins (we are not told which assistant this is)"] --> CAL["Try a few of each style —<br/>ordinary, reasoning-off, output-only —<br/>and time them"]
+  CAL --> PICK{"Which was fastest?"}
+  PICK -->|"reasoning-off<br/>(this is gpt_oss)"| F["Use reasoning-off messages"]
+  PICK -->|"output-only-the-tool-call<br/>(this is gemma)"| P["Use output-only messages"]
   F --> FILL["Validation-fill with the chosen style"]
   P --> FILL
 ```
 
 ---
 
-## 9. Where we stand, and what is still uncertain
+## 9. Our attack is provably the best possible single action — so the rest is pure speed
 
-- **Best score: 80.705**, above the cluster of public competitors around 60.
-- **We are near the practical ceiling of this approach (~84).** Each attempt has an unavoidable
-  fixed set-up cost (the grader rebuilds a fresh sandbox for every attempt) that no message trick can
-  remove, and the gemma assistant has no equivalent thinking to switch off, so it is now the slower of
-  the two.
-- **The real ranking is decided by a *hidden* second guardrail** that we cannot see or test until the
-  contest ends. Our reasoning-off trick puts unusual symbols in the message, but the harmful action
-  itself is identical and clean, and the guardrail only inspects tool calls (not message text), so we
-  expect it to survive — but this is the main open risk. Our earlier, plainer version (score 52.8) is
-  the safe fallback if the trick ever turns out to be penalized on the hidden guardrail.
+We read the contest's scoring code line by line and proved something important: **one clean action
+cannot earn more than the eighteen points our attack already earns.** To beat it you would need to make
+one action count as a higher-severity offence, or make one action trip two scoring rules at once, or
+make one action count as several distinct items. We checked all three against the guardrail's own code,
+and every path is blocked. (For example, the one way to trip a second rule would require the assistant
+to touch the web first — but touching the web is exactly what makes the guardrail block the outbound
+request, so the two can never happen together.) **There is no better attack to find here; our primitive
+is optimal.**
+
+The public leaderboard confirms this. The top scores sit in a tight cluster around **110–113**, and
+*nothing* exceeds the hard ceiling our proof predicts. If anyone had discovered a higher-scoring single
+action, their score would punch through that ceiling — none do. So everyone at the top is using the
+**same** attack we are; they are simply running it faster and fitting in more attempts.
+
+That reframes our remaining gap honestly. Decoding the numbers: on gpt_oss we already fit about as many
+attempts as the leaders do — the reasoning-off trick put us level there. **The whole gap is gemma
+throughput:** the leaders fit roughly twice as many gemma attempts as we do. So the question is not
+"what cleverer attack exists" but "why is each gemma attempt more expensive for us than for them" — and
+we are still hunting for that.
+
+**Three earlier beliefs we have since disproven** (recorded here so the doc stays honest):
+
+- There is **no ~84 "practical ceiling"** — that was based on a mis-measurement. The real ceiling of
+  this approach is set only by how fast each attempt runs.
+- There is **no large fixed "sandbox rebuild" cost per attempt.** We measured it directly: building and
+  resetting the environment takes about **0.16 seconds**, which is negligible. Almost the entire cost of
+  an attempt is the assistant generating its response.
+- gemma is **not** the slower assistant. It is the **faster** one; gpt_oss (the one that thinks) is the
+  slower row, which is exactly why the reasoning-off trick helped gpt_oss so much.
+
+**What is genuinely still open:**
+
+- **Gemma's speed.** Whether we can make each gemma attempt cheaper, or fit more of them into the replay
+  budget, is the one lever that would close the gap to the leaders. We have ruled several ideas out
+  (prefilling the tool call does not help — the assistant simply rewrites it), and are still testing.
+- **The hidden guardrail — the real prize.** The final ranking is decided by a *second* guardrail we
+  cannot see or test until the contest ends. Our speed tricks put unusual symbols in the *message*, but
+  the harmful action itself is identical and clean, and a guardrail inspects tool calls, not message
+  text — so we expect our attack to survive. But this is the main open risk, and our plainer earlier
+  version (score 52.8) is the safe fallback if the tricks ever turn out to be penalized there.
 
 For the numbers behind every claim here, see `reference.md`; for the assumptions we are relying on and
 how confident we are in each, see `assumptions.md`; for the blow-by-blow history, see `experiments.md`.
