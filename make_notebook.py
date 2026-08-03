@@ -34,6 +34,17 @@ if _blind:
     SLUG = f"attack-gemma-blind-{_blind}"
     TITLE = f"Attack gemma blind {_blind}"
 
+# `--gptblind=N` (E5c) fires a gpt_oss ceiling-bracket rung: blind-fill gpt_oss to N while holding gemma
+# at the banked 700 ceiling — gpt_oss is the only variable, so each rung reads its replay ceiling directly.
+_gptblind = next((int(a.split("=", 1)[1]) for a in sys.argv[1:] if a.startswith("--gptblind=")), 0)
+if _gptblind:
+    assert "GPT_BLIND_TARGET = 0" in attack_src, "expected GPT_BLIND_TARGET=0 default to patch"
+    assert "GEMMA_BLIND_TARGET = 0" in attack_src, "expected GEMMA_BLIND_TARGET=0 default to patch"
+    attack_src = attack_src.replace("GPT_BLIND_TARGET = 0", f"GPT_BLIND_TARGET = {_gptblind}", 1)
+    attack_src = attack_src.replace("GEMMA_BLIND_TARGET = 0", "GEMMA_BLIND_TARGET = 700", 1)
+    SLUG = f"attack-gpt-blind-{_gptblind}"
+    TITLE = f"Attack gpt blind {_gptblind}"
+
 
 def code(src: str) -> dict:
     return {"cell_type": "code", "metadata": {}, "execution_count": None,

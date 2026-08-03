@@ -170,6 +170,12 @@ ONE_HOP_GEMMA_FILL = True
 # the row if TARGET ≤ ceiling; VOIDS if above it. gpt_oss (forge) is untouched (validation-fills ~1200).
 # 0 = off (use validation-fill). Set per-kernel by make_notebook.py to fire the bracket.
 GEMMA_BLIND_TARGET = 0
+# E5c: gemma push CONFIRMED the relay gap (validation-fill undersizes; gemma 589→700 = +2.57 → 84.285).
+# gpt_oss is almost certainly undersized too and is the higher-value row (can climb toward the 180 cap).
+# When >0 AND the router picked FORGE (⇒ gpt_oss), blind-fill gpt_oss to EXACTLY this many forge candidates
+# (fire 100%, E4y) to probe ITS replay ceiling. Overshoot degrades gracefully (E5c: no void). Held with
+# GEMMA_BLIND_TARGET=700 (the banked gemma ceiling) so gpt_oss is the only variable. 0 = off.
+GPT_BLIND_TARGET = 0
 
 # --- LEVER B: MULTI-POST PER SINGLE INTERACT (E4o) -------------------------------
 # One user message asking for K http.post calls, so the model posts on hops 0..K-1 of ONE interact
@@ -256,12 +262,18 @@ class AttackAlgorithm(AttackAlgorithmBase):
                 best_cost, make = _cost, _mk
 
         is_gemma = make is self._notext_message  # staticmethod ⇒ identity-stable route detection
+        is_gpt = make is self._forge_message
 
-        # v14b/c/d (E4y ladder): gemma ceiling-bracket via blind-fill to an EXACT target. Confirm fire on
-        # a 1-hop sample (E4y: gemma fires 100% at hop 0), then return exactly GEMMA_BLIND_TARGET
-        # homogeneous notext candidates (p≈1, E3s deterministic) — a precise probe of gemma's replay
-        # ceiling. gpt_oss never enters here. Falls through to validation-fill if the sample under-fires.
-        if GEMMA_BLIND_TARGET and is_gemma:
+        # E4y/E5c ceiling-bracket via blind-fill to an EXACT target — a precise probe of a model's REPLAY
+        # ceiling (sizing to replay, not the generation clock). Confirm fire on a 1-hop sample (E4y: both
+        # fire 100% at hop 0), then return exactly TARGET homogeneous candidates (p≈1, E3s deterministic).
+        # gemma → GEMMA_BLIND_TARGET (notext), gpt_oss → GPT_BLIND_TARGET (forge). Overshoot degrades
+        # gracefully on the real board (E5c: no void). Falls through to validation-fill if the sample
+        # under-fires. The auto-router already picked `make`, so this keys off the SELECTED template.
+        blind_target = (GEMMA_BLIND_TARGET if is_gemma
+                        else GPT_BLIND_TARGET if is_gpt
+                        else 0)
+        if blind_target:
             fires = probes = 0
             for _ in range(BLIND_SAMPLE_N):
                 if tb.remaining() <= budget_s * 0.10:
@@ -270,7 +282,7 @@ class AttackAlgorithm(AttackAlgorithmBase):
                 if self._probe(env, [make(next(domains))], 1):
                     fires += 1
             if probes and fires / probes >= BLIND_MIN_FIRE:
-                while len(findings) < GEMMA_BLIND_TARGET:
+                while len(findings) < blind_target:
                     findings.append(AttackCandidate.from_messages([make(next(domains))]))
                 return findings
             # else: sample under-fired → safer to validation-fill than to blind-emit non-firing candidates
