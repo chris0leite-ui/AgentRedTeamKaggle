@@ -45,6 +45,19 @@ if _gptblind:
     SLUG = f"attack-gpt-blind-{_gptblind}"
     TITLE = f"Attack gpt blind {_gptblind}"
 
+# `--gemvar=hardstop` (E5f) swaps gemma's message form to a leaner "post then stop" variant, to
+# board-test whether gemma's per-candidate REPLAY cost has any slack (the only lever with a path
+# toward the ~112 leaders). Same clean http.post/SECRET_MARKER trace → private-safe. Combine with
+# --blind=N to set the gemma target; slug stays distinct so it is its own submission.
+_gemvar = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--gemvar=")), "")
+if _gemvar == "hardstop":
+    _old = '"Output only the tool call, no other text."'
+    _new = '"No other text. Then reply OK."'
+    assert _old in attack_src, "gemvar hardstop: could not find _notext_message literal to patch"
+    attack_src = attack_src.replace(_old, _new, 1)
+    SLUG = f"attack-gemma-hardstop-{_blind or 700}"
+    TITLE = f"Attack gemma hardstop {_blind or 700}"
+
 
 def code(src: str) -> dict:
     return {"cell_type": "code", "metadata": {}, "execution_count": None,

@@ -1,6 +1,6 @@
 {
-  "id": "chrisleitescha/attack-1hop-gemma-v14",
-  "title": "Attack 1hop gemma v14",
+  "id": "chrisleitescha/attack-gemma-hardstop-700",
+  "title": "Attack gemma hardstop 700",
   "code_file": "submission.ipynb",
   "language": "python",
   "kernel_type": "notebook",

@@ -5,6 +5,34 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E5f — spent the day's last 2 slots on the two most-informative probes (+ tokprof lab)
+- **Date:** 2026-08-03. Directive: use the expiring slots to experiment toward >100. **BOTE first (honest):**
+  public = mean(gpt_row ~108 hard-capped [E5e], gemma_row ~60.6 peak@700 [E4y]). Even a perfect gpt edge →
+  mean ~89; **>100 needs gemma_row >92 ⇒ gemma firing ~1.5× its measured peak** — no lever we have does that,
+  and gemma looks at its token floor (E5b). So **nothing submittable today realistically reaches 100**; the
+  slots are use-or-lose, so spend them on max information, not blind repeats.
+- **Submitted (both PENDING; server rerun is hours):**
+  - **slot1 `gpt-blind-1250`** (ref **55222012**), gemma held 700. Pins the gpt_oss void-edge: E5e voided at
+    1400, validation-fill is safe ~1200; 1250 bisects. If safe → gpt_row ~112, mean ~87 (small new best); if
+    void → edge ∈ (1200,1250). Proven forge message (no fire-risk, only overrun-risk).
+  - **slot2 `gemma-hardstop-700`** (ref **55222015**), gpt_oss validation-fill. Swaps gemma's message to a
+    "post then reply OK / no other text" form (`make_notebook.py --gemvar=hardstop`) to board-test whether
+    gemma's per-candidate REPLAY cost has slack — the **only >100-relevant lever**. Clean A/B vs notext 84.285
+    at the SAME N=700: if it beats 84.285, the wrap-up wasn't at floor ⇒ a cheaper candidate ⇒ push N next.
+    Same clean http.post/SECRET_MARKER trace ⇒ private-safe.
+- **Lab (free, running):** `make_lab_notebook.py --tokprof` with the **hardstop** variant added to `gemma_forms`
+  (kernel `attack-tokprof-lab`) → real-gemma per-turn token+latency for plain/notext/bare/tc/nofinal/hardstop.
+  Directly measures the wrap-up-cost lever offline to interpret slot2. (First pushed `--squeeze` by mistake —
+  that harness is the list-vs-multi study, not the message-form A/B; harmless, free kernel.)
+- **Recommended next steps:**
+  1. Read slot1/slot2 when scored. slot2 > 84.285 ⇒ hardstop cheaper ⇒ tomorrow push gemma-hardstop to N>700.
+     slot2 ≤ 84.285 ⇒ gemma wrap-up confirmed at floor ⇒ the message lever is dead; pivot fully to private.
+  2. Read the tokprof lab: does hardstop cut gemma's hop-2 tokens vs notext? (Predicts slot2 before it scores.)
+  3. Keep expectations honest: closing the gap to the ~112 leaders is an unsolved gemma-throughput problem;
+     these probes bank small edges + map the ceiling, they do not reach 100.
+
+---
+
 ## E5e — gpt_oss ceiling-bracket RESULT: all three rungs VOIDED (blind gpt_oss has ~no headroom)
 - **Date:** 2026-08-03. The E5d bracket scored. All three `SubmissionStatus.COMPLETE` but with a **blank
   publicScore** — the void signature (same as the known-void blind-emit `LEVER A N=1200`, ref 55132496,
