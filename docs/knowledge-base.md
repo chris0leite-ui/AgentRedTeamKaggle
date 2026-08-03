@@ -73,6 +73,16 @@ env build/reset), and (c) the number of model turns. Hard-won lessons:
   channel into the user message (Harmony control tokens) makes the model skip CoT → ~3× cheaper
   candidates, same firing. It's model-family-specific (helped the Harmony model, HURT the non-reasoning
   one) → **auto-route with no magic threshold: probe both forms, keep whichever is faster per model.**
+  **Why this works is SEMANTIC, not literal:** the injected tokens sit in the USER turn and *condition*
+  the model to skip reasoning — the model still regenerates the whole assistant turn fresh.
+- **You CANNOT "prefill the tool call" to avoid generating it.** Tempting idea: extend the channel-forge
+  *into* the tool-call tokens so the model only completes the tail. It doesn't work — the prefill is in
+  the user turn, so the model regenerates the COMPLETE tool call in its assistant turn regardless;
+  prefilling deeper only adds prompt-processing → strictly SLOWER (verified: every deeper depth was
+  slower, and a wrong-format deep prefill just broke the completion parser → 0% fire). A tool call is
+  irreducibly ~25-30 generated tokens × the turns the harness runs; no prompt form removes that. Confirm
+  the model's ACTUAL tool-call syntax by dumping a raw completion before guessing a prefill format
+  (formats are model-specific and often NOT standard JSON).
 - **A generation speedup is diluted by the fixed per-candidate overhead.** 3.12× on generation became
   ~2× real because each candidate also pays a fixed env-build cost the trick can't touch. Know your
   floor before projecting.
