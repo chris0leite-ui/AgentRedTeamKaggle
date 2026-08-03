@@ -3,11 +3,16 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
-**CURRENT BEST: v13 notext router = 81.720** (E4z, 2026-08-03) — new best, +1.0 over v12 forge 80.705.
-Arc: v5 36.81 → v6 lean 52.775 → v12 forge 80.705 → **v13 notext 81.720**. notext converts on gemma but
-only marginally (+1.0, not the projected ~89-94 — offline speedup diluted by the real overhead haircut,
-same as forge). gpt_oss ~108 (forge) + gemma ~55 (notext). E4y ladder (700/780/850/1000) now bracketing
-gemma's real replay ceiling (likely just above ~589 per E4z/E4q).
+**CURRENT BEST: gemma-blind-700 = 84.285** (E5c, 2026-08-03) — +2.57 over v13. Arc: v12 forge 80.705 →
+v13 notext 81.720 → **gemma-blind-700 84.285**. **KEY FINDING: validation-fill was UNDERSIZING gemma —
+the relay gap is REAL.** Pushing gemma 589→700 (blind-fill) converted; ceiling ≈700 (row ~60.6), beyond
+it degrades gracefully (no void). gpt_oss held safe (~1200, row ~108) in all rungs.
+- [ ] **NEXT LEVER — gpt_oss ceiling-bracket (NEEDS GO-AHEAD).** gpt_oss is UNTESTED and almost certainly
+  undersized too (the gemma result proves the relay gap; we wrongly assumed gpt_oss saturated). It's the
+  higher-value row (can climb toward the 180 cap). Blind-fill gpt_oss to a few targets above ~1200, gemma
+  held at 700. If same ~1.19× gap → gpt row 108→~129 → mean ~95; if larger gap → toward ~110+.
+- [ ] **Bank 700 as the gemma default** in attack.py (GEMMA_BLIND_TARGET=700 or the auto-router sized to
+  the replay ceiling). Private-safe (identical clean trace).
 `attack.py` FORGE_MODE=True (calibrate plain-vs-forge → keep faster → validation-fill; self-sizes, no overrun).
 - [ ] **v13: notext auto-router — SUBMITTED (ref 55185855), scored rerun PENDING.** Projects ~89-94
   (E4u). gpt_oss→forge (0.73s), gemma→notext (0.94s vs plain 1.18s). Awaiting the board score.

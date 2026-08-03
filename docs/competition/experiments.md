@@ -5,6 +5,39 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E5c — CEILING-BRACKET SCORED: we WERE undersized — gemma push → NEW BEST 84.285 (relay gap is REAL)
+- **Date:** 2026-08-03. The 5-rung gemma ceiling-bracket (gpt_oss held at its safe forge count in ALL
+  rungs; only gemma varied) scored:
+
+  | gemma target | ref | public | gemma row (=2·pub−gpt_row) |
+  |---|---|---|---|
+  | ~589 (v13 baseline, validation-fill) | 55185855 | 81.720 | ~55 |
+  | **700 (blind)** | 55195606 | **84.285** ⭐ | **~60.6** |
+  | 780 (v14, 1-hop fill) | 55195182 | 83.295 | ~58.6 |
+  | 850 (blind) | 55195608 | 83.205 | ~58.4 |
+  | 1000 (blind) | 55195617 | 82.080 | ~56.2 |
+
+- **HEADLINE: validation-fill was UNDERSIZING gemma. Pushing ~589→700 raised the score +2.57 →
+  84.285 (NEW BEST).** The relay gap is REAL — generation-probe cost > replay cost, so sizing to the
+  generation clock left gemma replay budget unused. This DIRECTLY confirms the fill-economics hypothesis
+  (forward-plan) that E4q had seemed to refute; E4q's void was pushing BOTH models, not gemma alone.
+- **gemma's replay ceiling ≈ 700** (row peaks ~60.6). Beyond it the score DECLINES monotonically
+  (700→1000: 84.29→82.08) but does **NOT void** — overshooting a single model's replay budget on the real
+  board degrades gracefully (extra candidates burn replay time without scoring), it doesn't zero the row.
+  So sizing matters: hit the ceiling, don't overshoot. ~700 is the gemma sweet spot.
+- **THE BIG IMPLICATION — gpt_oss is almost certainly undersized TOO, and it's the higher-value row.**
+  We kept gpt_oss "safe" (~1200) in every rung on the WRONG assumption it was saturated. The gemma result
+  proves the relay gap exists; the same gap should apply to gpt_oss (~1.19× headroom on gemma → gpt_oss
+  1200 could be ~1430+, row 108→~129). gpt_oss is UNTESTED and is the bigger prize (its row can climb
+  toward the 180 cap). **Next lever: a gpt_oss ceiling-bracket** (blind-fill gpt_oss to a few targets
+  above ~1200, gemma held at the banked 700). Projected mean if gpt_oss has the same gap: ~(129+60)/2 ≈
+  95; if gpt_oss replay is much cheaper (larger gap → toward the 2000 cap): mean toward ~110+.
+- **Reconciles the ~112 gap:** the leaders aren't using cheaper candidates (E5b: we're at the token
+  floor) — they're **sizing to the replay ceiling on BOTH rows**, which we've now only done on gemma.
+- **Best arc:** v12 forge 80.705 → v13 notext 81.720 → **gemma-blind-700 = 84.285**.
+- **NEXT:** (1) bank 700 as the gemma default; (2) gpt_oss ceiling-bracket (needs go-ahead — spends
+  submissions); (3) the private-guardrail question is unchanged (blind-fill keeps the identical clean trace).
+
 ## E5b — TOKEN PROFILING: both models are at their per-candidate TOKEN FLOOR — no message-shape lever left
 - **Date:** 2026-08-03. `--tokprof` lab (real models, offline), 2-hop (real replay shape), N=10.
   Decomposes each candidate into generated tokens per turn (`usage.completion_tokens`) across message forms.
