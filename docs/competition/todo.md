@@ -3,9 +3,11 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
-**CURRENT BEST: v12 forge = 80.705** (E4t, 2026-08-01) — above the pilkwang ~60 field cluster. Arc:
-v5 36.81 → v6 lean 52.775 → **v12 forge 80.705** (full detail in `experiments.md` E4l→E4t). mean 80.705
-= gpt_oss ~108 (Harmony analysis-forge → ~2× more candidates) + gemma ~53 (auto-routed to plain).
+**CURRENT BEST: v13 notext router = 81.720** (E4z, 2026-08-03) — new best, +1.0 over v12 forge 80.705.
+Arc: v5 36.81 → v6 lean 52.775 → v12 forge 80.705 → **v13 notext 81.720**. notext converts on gemma but
+only marginally (+1.0, not the projected ~89-94 — offline speedup diluted by the real overhead haircut,
+same as forge). gpt_oss ~108 (forge) + gemma ~55 (notext). E4y ladder (700/780/850/1000) now bracketing
+gemma's real replay ceiling (likely just above ~589 per E4z/E4q).
 `attack.py` FORGE_MODE=True (calibrate plain-vs-forge → keep faster → validation-fill; self-sizes, no overrun).
 - [ ] **v13: notext auto-router — SUBMITTED (ref 55185855), scored rerun PENDING.** Projects ~89-94
   (E4u). gpt_oss→forge (0.73s), gemma→notext (0.94s vs plain 1.18s). Awaiting the board score.

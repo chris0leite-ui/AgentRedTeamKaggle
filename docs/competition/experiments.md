@@ -5,6 +5,16 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E4z — v13 (notext auto-router) SCORED 81.720 → NEW BEST (+1.0 over v12 forge 80.705)
+- **Date:** 2026-08-03 (submitted 08-02). ref 55185855. **81.720, clean COMPLETE.** The notext gemma
+  route converts on the board — but only **+1.0**, NOT the projected ~89-94 (E4u). notext's ~1.25×
+  offline per-candidate speedup diluted to ~+1 mean, the SAME offline→real haircut the forge saw
+  (3.12×→2×). Confirms the E4q picture: gemma is genuinely throughput/replay-bound at ~589, and a
+  cheaper probe barely moves the returned count on the real board. **Real headroom above ~589 is small.**
+- **Implication for the E4y ladder (700/780/850/1000):** gemma's real ceiling is likely just above ~589,
+  so the higher rungs probably VOID and the win (if any) is a small one from 700. The bracket will pin it.
+- **Best arc:** v5 36.81 → v6 52.775 → v12 forge 80.705 → **v13 notext 81.720**.
+
 ## E4y — 1-HOP PROBE lab: fires 100% at every hop cap; validation probe is 1.32-1.55× cheaper at hops=1
 - **Date:** 2026-08-02. `--probehops` lab (real models, offline). For each model, plain + the v13 winner
   template, probed at `max_tool_hops ∈ {1,2,4,8}` replicating `_probe` exactly. Question: does a 1-hop
@@ -58,7 +68,7 @@ steps**. One entry per submission or notable local run.
 
   | ref | rung | gemma N | expected |
   |---|---|---|---|
-  | 55185855 | v13 (baseline, notext validation-fill) | ~589 | safe, ~87 if notext converts |
+  | 55185855 | v13 (baseline, notext validation-fill) | ~589 | **SCORED 81.720 → NEW BEST (+1.0 vs v12 80.705)** |
   | 55195182 | v14 (notext 1-hop fill) | ~780 | at ceiling estimate — marginal |
   | 55195606 | blind-700 | 700 | ≤ceiling → scores (~85) |
   | 55195608 | blind-850 | 850 | marginal |
