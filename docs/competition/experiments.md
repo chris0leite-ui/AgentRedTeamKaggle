@@ -5,6 +5,42 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E5e — gpt_oss ceiling-bracket RESULT: all three rungs VOIDED (blind gpt_oss has ~no headroom)
+- **Date:** 2026-08-03. The E5d bracket scored. All three `SubmissionStatus.COMPLETE` but with a **blank
+  publicScore** — the void signature (same as the known-void blind-emit `LEVER A N=1200`, ref 55132496,
+  blank since 07-31).
+
+  | rung | ref | gpt_oss target | gemma | status | publicScore |
+  |---|---|---|---|---|---|
+  | `gpt-blind-1400` | 55211036 | 1400 | 700 | COMPLETE | **(void — blank)** |
+  | `gpt-blind-1700` | 55211038 | 1700 | 700 | COMPLETE | **(void — blank)** |
+  | `gpt-blind-2000` | 55211039 | 2000 | 700 | COMPLETE | **(void — blank)** |
+
+- **Observations:**
+  - **E5d's graceful-degradation assumption is REFUTED for gpt_oss.** E5d predicted overshoot would degrade,
+    not void; instead **even 1400 voided** — only ~1.17× the safe validation-filled ~1200.
+  - **Model asymmetry, directly measured (same board, same day):** blind-filling **gemma** degrades
+    gracefully — 700→**84.285**, 850→83.205, 1000→82.080 (E4y rungs 55195606/08/17) — but blind-filling
+    **gpt_oss** to ≥1400 **voids outright.** gpt_oss is the slow/reasoning replay row; ~1200 (what
+    validation-fill already reaches) is at/near its replay-budget ceiling, so blind overshoot overruns and
+    zeroes the run. gemma (fast) tolerates overshoot because its per-candidate replay is cheap.
+  - **Consequence:** the gpt_oss throughput lever is **closed** — validation-fill already maxes it (~1200,
+    row ~108) with no safe blind headroom above it. gemma is also at its optimum (700, row ~60.6; 850/1000
+    degrade). **Both models sit at their practical replay ceilings.**
+  - **Cost:** 3 submissions spent for a negative result. Informative (gpt_oss ceiling pinned; the
+    "mean ~120" path is dead), but should have been a single ~1300 rung, not 1400/1700/2000.
+- **Result (observation):** **best stays 84.285** (`gemma-blind-700` + gpt_oss validation-fill ~1200).
+  Public throughput is plateaued near ~84 under this config (consistent with E5b: both models at their
+  per-candidate token floor). The gap to the ~112 leaders is a **gemma seconds-per-candidate** question,
+  not a "more blind candidates" one.
+- **Recommended next steps:**
+  1. **Do NOT re-push a gpt_oss blind bracket** — ceiling pinned; keep gpt_oss on validation-fill.
+  2. **Bank the safe config:** `GEMMA_BLIND_TARGET=700`, gpt_oss = validation-fill (no blind target).
+  3. Public frontier now = (a) cheaper gemma candidates (hard — E5b token floor) or (b) the
+     **private-guardrail** track (E-P1 done; E-P2 next). Weight shifts to private robustness.
+
+---
+
 ## E-P1 — route-survival matrix vs a bracket of simulated guardrails (LOCAL, no GPU)
 - **Date:** 2026-08-03. Goal: since the private guardrail (`persistent_provenance`) is untestable, author
   a bracket of plausible guardrails and check which attack routes still SCORE against each.

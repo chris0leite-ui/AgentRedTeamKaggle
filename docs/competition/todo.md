@@ -7,13 +7,13 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
 v13 notext 81.720 → **gemma-blind-700 84.285**. **KEY FINDING: validation-fill was UNDERSIZING gemma —
 the relay gap is REAL.** Pushing gemma 589→700 (blind-fill) converted; ceiling ≈700 (row ~60.6), beyond
 it degrades gracefully (no void). gpt_oss held safe (~1200, row ~108) in all rungs.
-- [ ] **gpt_oss ceiling-bracket — SUBMITTED, PENDING (check the scores).** Refs: `gpt-blind-1400`
-  (55211036), `gpt-blind-1700` (55211038), `gpt-blind-2000` (55211039); gemma held at 700 in all.
-  **Read them per E5d:** gemma row ~60.6 constant ⇒ `gpt_row = 2·public − 60.6`; the peak target = gpt's
-  replay ceiling; if 2000 peaks without declining ⇒ gpt hit the 180 cap ⇒ mean ~120. **Bank the peak** as
-  `GPT_BLIND_TARGET=<peak>` + `GEMMA_BLIND_TARGET=700` in attack.py. 2 submissions left today (as of 08-03).
+- [x] ~~**gpt_oss ceiling-bracket — SUBMITTED, PENDING.**~~ **RESULT: ALL THREE VOIDED (E5e, 2026-08-03).**
+  `gpt-blind-1400/1700/2000` (55211036/38/39) all COMPLETE with **blank publicScore** = void. **gpt_oss
+  blind headroom above validation-fill (~1200) is ~zero** — even 1400 (×1.17) overran the replay budget and
+  zeroed. Asymmetry: gemma overshoot degrades gracefully, gpt_oss overshoot VOIDS. E5d's "no void" assumption
+  refuted. **gpt_oss lever CLOSED; keep it on validation-fill. Best stays 84.285.**
 - [ ] **Bank 700 as the gemma default** in attack.py (GEMMA_BLIND_TARGET=700 or the auto-router sized to
-  the replay ceiling). Private-safe (identical clean trace).
+  the replay ceiling). Private-safe (identical clean trace). gpt_oss = validation-fill (NO blind target — E5e).
 `attack.py` FORGE_MODE=True (calibrate plain-vs-forge → keep faster → validation-fill; self-sizes, no overrun).
 - [ ] **v13: notext auto-router — SUBMITTED (ref 55185855), scored rerun PENDING.** Projects ~89-94
   (E4u). gpt_oss→forge (0.73s), gemma→notext (0.94s vs plain 1.18s). Awaiting the board score.
