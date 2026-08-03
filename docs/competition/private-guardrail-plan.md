@@ -121,6 +121,12 @@ Confirmed empirically against the real `OptimalGuardrail` + scorer:
   only `{seed, recent_sources, recent_tools, last_user}` (`core/env/sandbox.py:289`). So the flag is
   ALWAYS `False` — the branch is unreachable from any message/trace, on both boards (same context builder).
   Do not pursue. (Logged because the branch looks tempting in `optimal.py` — it is a dead path.)
+  - **Can the LLM set it? No — there is no data path from the agent to that context key.** The guardrail
+    only reads the literal context dict (it does not parse the message: `OptimalGuardrail.decide` never
+    even looks at `last_user`). Message text → ignored. Tool-output *content* → never becomes a context
+    key (only an event's *source label* + *tool name* feed `recent_sources`/`recent_tools`). No tool
+    writes `user_confirmed_safe`. Hooks *could* add it, but hooks are harness/defender-registered (default
+    none), not ours. So nothing the agent says or does can flip the flag.
 
 ## 3. The tool to build (harness-interaction / guardrail-simulation)
 
