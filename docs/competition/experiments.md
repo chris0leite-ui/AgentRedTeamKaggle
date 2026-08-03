@@ -5,6 +5,36 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E5d — gpt_oss CEILING-BRACKET SUBMITTED (PENDING) — how to read the scores (for whoever checks next)
+- **Date:** 2026-08-03. Fired the gpt_oss ceiling-bracket (E5c's next lever): blind-fill gpt_oss to N,
+  **gemma held at the banked 700** in all three, so gpt_oss is the only variable. Self-tests were GREEN
+  before submit. 2 submissions left today.
+
+  | rung | ref | gpt_oss target | gemma | status |
+  |---|---|---|---|---|
+  | `gpt-blind-1400` | **55211036** | 1400 | 700 | PENDING |
+  | `gpt-blind-1700` | **55211038** | 1700 | 700 | PENDING |
+  | `gpt-blind-2000` | **55211039** | 2000 (the cap) | 700 | PENDING |
+
+- **HOW TO INFER FROM THE SCORES** (check: `kaggle competitions submissions ai-agent-security-multi-step-tool-attacks`):
+  - The **gemma row is constant ~60.6** across all three (gemma=700 in each, same as the 84.285 run). So
+    isolate the gpt_oss row: **`gpt_row = 2 × public − 60.6`**. (Baseline: gemma-blind-700 = 84.285 with
+    gpt at validation-fill ~1200 → gpt_row ~108.)
+  - **The target where `public` PEAKS = gpt_oss's real replay ceiling.** Beyond the peak, expect a
+    graceful DECLINE (not a void) — E5c showed overshooting one model's replay budget degrades, doesn't
+    zero. Each model's row is a SEPARATE replay, so pushing gpt_oss can't void the gemma row.
+  - **Decode targets:** `gpt-blind-1400` scoring >84.285 ⇒ gpt_oss was undersized (relay gap on gpt too).
+    If `gpt-blind-2000` is the peak and doesn't decline ⇒ gpt_oss hit the **2000 cap (row 180)** ⇒
+    mean = (180+60.6)/2 = **120.3** (past the leaders). If it peaks at 1400/1700 ⇒ that N is gpt's ceiling.
+  - **Rough map:** public 90 ⇒ gpt_row 119 (~1327 cand); public 100 ⇒ gpt_row 139 (~1550); public 110 ⇒
+    gpt_row 159 (~1770); public 120.3 ⇒ gpt_row 180 (cap).
+- **ACTION on results:** bank the peak rung as the new best; set `GPT_BLIND_TARGET=<peak>` **and**
+  `GEMMA_BLIND_TARGET=700` as the committed config in `attack.py` (both currently default 0). That pair
+  becomes the standing submission config. Then reconsider: is gemma's 700 also re-testable higher now, or
+  is 700 firm (E5c said ~700 is its ceiling)? Private-safe throughout (identical clean http.post trace).
+- **NOTE:** the background poll watching these lives in the session that submitted them; a fresh session
+  must re-check the refs above manually (the scores are what matter, not the poll).
+
 ## E5c — CEILING-BRACKET SCORED: we WERE undersized — gemma push → NEW BEST 84.285 (relay gap is REAL)
 - **Date:** 2026-08-03. The 5-rung gemma ceiling-bracket (gpt_oss held at its safe forge count in ALL
   rungs; only gemma varied) scored:
