@@ -46,5 +46,8 @@ The operating manual. Kept deliberately short; details live in the files it poin
   (source-verified) and the model-emission experiments that gate it.
 - `docs/competition/iteration.md` — the edit→gate→measure→submit loop; the `lab/` notebook.
 - `docs/competition/plan-offline-scorer.md` — planned offline public scorer + submission-safety fix.
+- `docs/competition/private-guardrail-plan.md` — **next-session focus:** private-board strategy
+  (hedge-not-adapt, why runtime adaptation is impossible), the extraction-route map (with/without
+  SECRET_MARKER), and the spec for the harness-interaction / guardrail-simulation tool.
 - `docs/competition/experiments.md` — dated, append-only log.
 - `docs/competition/todo.md` — backlog / in-flight / done.
