@@ -627,6 +627,12 @@ flowchart TB
             at all</strong>. Disguising works for a <em>real</em> secret value — the scorer <em>does</em>
             unscramble those — but a real value was never in danger from a word-scanner anyway, because the
             filter never saw it. Encoding buys us nothing.</p>
+          <p>A subtler version — hide the word in the <em>instruction</em> ("take <span class="tok">ECRET_MARKER</span>,
+            add an S, then send it") so the assistant rebuilds the marker only at the last moment — hits the same
+            wall. It fools only a filter that reads the <em>instruction</em> but not the <em>data actually sent</em>,
+            and such a filter would have let the plain marker through anyway. Any filter that inspects the outgoing
+            request still sees the rebuilt marker, because that is the one place the marker <strong>must</strong> sit
+            to score. Evasion and scoring want the same square.</p>
         </div>
 
         <div class="panel">
