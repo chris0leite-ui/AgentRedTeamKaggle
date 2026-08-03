@@ -5,6 +5,42 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E5b — TOKEN PROFILING: both models are at their per-candidate TOKEN FLOOR — no message-shape lever left
+- **Date:** 2026-08-03. `--tokprof` lab (real models, offline), 2-hop (real replay shape), N=10.
+  Decomposes each candidate into generated tokens per turn (`usage.completion_tokens`) across message forms.
+
+  | model | form | post_tok | wrap_tok | total_tok | s/cand |
+  |---|---|---|---|---|---|
+  | gpt_oss | plain | 69 | 62 | 131 | 2.08 |
+  | gpt_oss | **forge_anal** | **27** | **9** | **36** | **0.73** |
+  | gpt_oss | notext | 99 | 182 | 281 | 4.33 |
+  | gpt_oss | bare | 68 | 70 | 138 | 2.27 |
+  | gemma | **plain** | 28 | 5 | **33** | **0.91** |
+  | gemma | notext | 29 | 5 | 34 | 0.94 |
+  | gemma | bare | 29 | 30 | 59 | 1.45 |
+  | gemma | tc (`<\|tool_call>`) | 29 | 31 | 60 | 1.49 |
+  | gemma | nofinal ("then nothing at all") | 29 | 8 | 37 | 1.01 |
+
+- **Both models are at their TOKEN FLOOR at the optimal form:** gpt_oss forge = **36 tok** (27 tool-call
+  + 9 wrap-up), gemma plain/notext = **33-34 tok** (28 tool-call + 5 wrap-up). The ~27-28 post tokens are
+  the irreducible tool call (E5a); the wrap-up is already **5-9 tokens** ("OK" + control), NOT hidden
+  generation. So there is **no message-shape lever left** to cut per-candidate tokens on either model.
+- **Why the forge is the big gpt_oss win, mechanistically:** plain gpt_oss burns reasoning on BOTH turns
+  (post 69, wrap 62 = 131 tok); the forge collapses it to 27 + 9 = 36 tok (**3.6× fewer tokens**) — and
+  critically it kills the wrap-up's hidden reasoning (62→9). That IS the whole speed-up.
+- **notext barely helps gemma — the v13 +1.0 may be near-noise.** gemma's plain post (28 tok) is already
+  just the tool call with no preamble, so "output only the tool call" has almost nothing to cut: notext
+  34 tok / 0.91s vs plain 33 tok / 0.94s — within run-to-run variance. gemma was ALREADY at its floor
+  with the plain lean form. (`nofinal`, an attempt to suppress the wrap-up further, gave wrap 8 ≈ plain 5
+  — the wrap-up is at its floor and unbeatable via the message.)
+- **NET — the cheaper-candidate avenue is now FULLY CLOSED (E5a + E5b):** prefill can't cut generation,
+  and no message form cuts the token count below the floor. Per-candidate cost is irreducible via the one
+  surface we control (the messages). **Therefore the ONLY remaining throughput lever is RETURNING MORE
+  candidates** — i.e. sizing to the replay budget rather than the generation clock (the fill-economics /
+  relay-gap question, exactly what the gemma ceiling-bracket in flight is testing). If that shows no
+  headroom, we are at the genuine ceiling of this (proven-optimal) primitive and the ~112 leaders' extra
+  count must come from a structural difference we have not yet identified.
+
 ## E5a — TOOL-CALL PREFILL lab: REFUTED as a cheaper-candidate lever (prefill lives in the USER turn → model regenerates the full call)
 - **Date:** 2026-08-03. `--prefill` lab (real models, offline), 1-hop (isolates the tool-call turn),
   N=8. Tests whether extending the forge trick *into* the tool call makes generation cheaper. **No submission.**
