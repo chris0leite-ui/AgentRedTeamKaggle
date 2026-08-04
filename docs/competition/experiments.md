@@ -31,6 +31,25 @@ steps**. One entry per submission or notable local run.
   3. Keep expectations honest: closing the gap to the ~112 leaders is an unsolved gemma-throughput problem;
      these probes bank small edges + map the ceiling, they do not reach 100.
 
+### E5f RESULTS (2026-08-03, same day)
+- **slot1 `gpt-blind-1250` (55222012): COMPLETE, blank publicScore = VOIDED.** Even ×1.04 over the safe ~1200
+  voids. **gpt_oss blind headroom = ZERO; validation-fill ~1200 is the exact ceiling** (tightens E5e's 1400
+  edge to <1250). gpt lever fully closed — never blind-push gpt again.
+- **tokprof lab (`attack-tokprof-lab`, real models): the hardstop lever is DEAD.** Gemma per-turn tokens:
+  plain 33 tok/0.92s · notext 34/0.95s · **hardstop 34/0.93s** (post 29 + wrap **5**) · nofinal 37/1.00s ·
+  bare 59/1.48s · tc 60/1.50s. **Gemma's wrap-up is already at the 5-token floor**, so "post then reply OK"
+  cuts nothing — hardstop ≡ notext ≡ plain. ⇒ slot2 (still PENDING) will ≈84.285, no gain. Confirms E5b.
+  (Aside: notext is NOT faster than plain here (0.95 vs 0.92s) — the E4u "notext 1.25×" edge didn't reproduce;
+  the router self-selects the cheapest anyway, so no action.)
+- **Both cost-levers now closed ⇒ 84.285 is confirmed the design ceiling.** No message/blind lever remains.
+- **THE SHARPENED PUZZLE (the real gemma question):** the lab clocks a gemma candidate at **~0.93s over 2
+  hops**; at that cost the 9000s budget would fit THOUSANDS — yet gemma caps at 700 and *degrades* above it
+  (850→row 58.4, 1000→56.2). So the 700 wall is **NOT** per-candidate generation cost. The binding term must
+  be the **real 8-hop REPLAY cost** (grader replays at DEFAULT_MAX_TOOL_HOPS=8, not the 2 the tokprof timed),
+  and/or a generation-probe cap. **Next lever = the `--gateway` lab (E4g): runs the real `_replay_and_score`
+  offline → measure true per-candidate replay seconds and why 700 is the wall.** This — not message wording —
+  is the only remaining path to understanding the ~112 gemma gap. Pair with the private track (E-P2).
+
 ---
 
 ## E5e — gpt_oss ceiling-bracket RESULT: all three rungs VOIDED (blind gpt_oss has ~no headroom)

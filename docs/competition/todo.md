@@ -14,6 +14,16 @@ it degrades gracefully (no void). gpt_oss held safe (~1200, row ~108) in all run
   refuted. **gpt_oss lever CLOSED; keep it on validation-fill. Best stays 84.285.**
 - [ ] **Bank 700 as the gemma default** in attack.py (GEMMA_BLIND_TARGET=700 or the auto-router sized to
   the replay ceiling). Private-safe (identical clean trace). gpt_oss = validation-fill (NO blind target — E5e).
+- [x] ~~**E5f: last 2 slots — gpt-blind-1250 + gemma-hardstop.**~~ **RESULTS (2026-08-03):** slot1
+  `gpt-blind-1250` (55222012) **VOIDED** ⇒ gpt blind headroom = ZERO (even ×1.04 voids); validation-fill ~1200
+  is the exact ceiling. tokprof lab: **hardstop ≡ notext ≡ plain** (gemma wrap-up already at the 5-token
+  floor) ⇒ the message-cost lever is **DEAD**; slot2 (55222015, PENDING) will ≈84.285. **Both public
+  cost-levers closed ⇒ 84.285 is the confirmed design ceiling.**
+- [ ] **THE gemma question — run the `--gateway` lab (E4g).** The lab clocks a gemma candidate at ~0.93s/2-hop,
+  so cost can't explain the 700 cap (9000s would fit thousands) yet 850/1000 DEGRADE. The binding term is the
+  real **8-hop replay cost** (grader replays at 8 hops, not 2). Measure true per-candidate replay seconds
+  offline → understand why 700 is the wall. This is the only remaining public-throughput lever; message/blind
+  levers are exhausted. Pair with the private track (E-P2).
 `attack.py` FORGE_MODE=True (calibrate plain-vs-forge → keep faster → validation-fill; self-sizes, no overrun).
 - [ ] **v13: notext auto-router — SUBMITTED (ref 55185855), scored rerun PENDING.** Projects ~89-94
   (E4u). gpt_oss→forge (0.73s), gemma→notext (0.94s vs plain 1.18s). Awaiting the board score.
