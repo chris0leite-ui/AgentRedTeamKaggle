@@ -41,6 +41,13 @@ steps**. One entry per submission or notable local run.
   cuts nothing — hardstop ≡ notext ≡ plain. ⇒ slot2 (still PENDING) will ≈84.285, no gain. Confirms E5b.
   (Aside: notext is NOT faster than plain here (0.95 vs 0.92s) — the E4u "notext 1.25×" edge didn't reproduce;
   the router self-selects the cheapest anyway, so no action.)
+- **slot2 RESULT (2026-08-04): `gemma-hardstop-700` (55222015) VOIDED (blank).** Prediction (≈84.285) WRONG.
+  The tokprof "hardstop ≡ notext" was OFFLINE; on the board the hardstop message was pricier enough that
+  **700 of them OVERRAN the replay budget → void**, where 700 *notext* candidates fit (84.285). This is a
+  clean real-board corroboration of E5i: the board is replay-budget-bound, a FIXED blind count is fragile (a
+  small message-cost change flips 84→void), and **replay-safe sizing (E5i) is exactly the fix** — it measures
+  each candidate's cost and returns fewer instead of voiding. (Also: gemma CAN void, not only degrade — E5c's
+  "gemma degrades gracefully" holds for the SAME message at higher N, but a pricier message voids at N=700.)
 - **Both cost-levers now closed ⇒ 84.285 is confirmed the design ceiling.** No message/blind lever remains.
 - **THE SHARPENED PUZZLE (the real gemma question):** the tokprof lab clocks a gemma candidate at ~0.93s
   over 2 hops; at that cost the 9000s budget would fit THOUSANDS — yet gemma caps at 700 and *degrades*
