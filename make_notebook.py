@@ -58,6 +58,15 @@ if _gemvar == "hardstop":
     SLUG = f"attack-gemma-hardstop-{_blind or 700}"
     TITLE = f"Attack gemma hardstop {_blind or 700}"
 
+# `--rscap=N` (E5j ladder) sets the gemma REPLAY-SAFE cap to N (keeps GEMMA_BLIND_TARGET=0 so the probed
+# replay-safe fill runs, not blind-emit). Distinct slug per rung. Use to map the probed-fill ceiling.
+_rscap = next((int(a.split("=", 1)[1]) for a in sys.argv[1:] if a.startswith("--rscap=")), 0)
+if _rscap:
+    assert "_GEMMA_REPLAY_CAP = 1000" in attack_src, "expected _GEMMA_REPLAY_CAP=1000 default to patch"
+    attack_src = attack_src.replace("_GEMMA_REPLAY_CAP = 1000", f"_GEMMA_REPLAY_CAP = {_rscap}", 1)
+    SLUG = f"attack-rscap-{_rscap}"
+    TITLE = f"Attack rscap {_rscap}"
+
 
 def code(src: str) -> dict:
     return {"cell_type": "code", "metadata": {}, "execution_count": None,

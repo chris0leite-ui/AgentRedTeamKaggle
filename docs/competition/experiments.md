@@ -56,6 +56,26 @@ steps**. One entry per submission or notable local run.
   loop breaks early on a final answer [sandbox.py:236]; our candidate exits after 2 hops, so replay ≠ 8×.)
   The `--gateway` lab (E5g) settles it by direct measurement.
 
+### E5k — SUBMITTED: probed-vs-blind gemma ceiling A/B (4 slots, all PENDING)
+- **Date:** 2026-08-04. Spent the day's remaining 4 slots on a controlled A/B to answer the central open
+  question (does the PROBED replay-safe fill beat the BLIND mechanism on the board, or is notext
+  candidate-capped at ~700?). All gemma-notext, gpt_oss = unchanged legacy fill. Private-safe.
+
+  | ref | config | N |
+  |---|---|---|
+  | **55241945** | PROBED replay-safe cap 1400 | ≤1400 |
+  | **55241948** | BLIND notext | 1400 |
+  | **55241949** | PROBED replay-safe cap 2000 | ≤2000 |
+  | **55241950** | BLIND notext | 2000 |
+
+- **Read tomorrow — matrix with v15 (probed-1000, 55239794) + E5c (blind 700/850/1000 = 84.3/83.2/82.1):**
+  - **PROBED > BLIND at 1400 & 2000** ⇒ validation/replay-safe sizing IS the lever ⇒ lift `_GEMMA_REPLAY_CAP`,
+    push toward the field's ~1244. Peak of the probed curve = the real ceiling.
+  - **PROBED ≈ BLIND (both flat/decline/void)** ⇒ the ~700 wall is the notext CANDIDATE on the board, not
+    the fill ⇒ the real lever is a cheaper gemma replay candidate (unsolved); bank 84.285.
+  - **BLIND-2000 void but PROBED-2000 scores** ⇒ probing's fire-validation is what matters at scale.
+  - Downside bounded: LB keeps the 84.285 best; any void is data, not a loss.
+
 ### E5j — SUBMITTED: replay-safe sizing v15 (gemma self-sizes, cap 1000) — PENDING
 - **Date:** 2026-08-04. Shipped the E5i port. `attack-replaysafe-v15` (ref **55239794**), 4 slots left.
   Config: **gemma** = replay-safe 1-hop fill (`_replay_safe_fill`, FRAC 0.85, coef 1.20× safety, **capped at
