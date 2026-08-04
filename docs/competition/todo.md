@@ -19,11 +19,17 @@ it degrades gracefully (no void). gpt_oss held safe (~1200, row ~108) in all run
   is the exact ceiling. tokprof lab: **hardstop ≡ notext ≡ plain** (gemma wrap-up already at the 5-token
   floor) ⇒ the message-cost lever is **DEAD**; slot2 (55222015, PENDING) will ≈84.285. **Both public
   cost-levers closed ⇒ 84.285 is the confirmed design ceiling.**
-- [ ] **THE gemma question — run the `--gateway` lab (E4g).** The lab clocks a gemma candidate at ~0.93s/2-hop,
-  so cost can't explain the 700 cap (9000s would fit thousands) yet 850/1000 DEGRADE. The binding term is the
-  real **8-hop replay cost** (grader replays at 8 hops, not 2). Measure true per-candidate replay seconds
-  offline → understand why 700 is the wall. This is the only remaining public-throughput lever; message/blind
-  levers are exhausted. Pair with the private track (E-P2).
+- [x] ~~**THE gemma question — run the `--gateway` lab.**~~ **DONE → E5g (2026-08-03): REPLAY is cheap,
+  GENERATION is the bottleneck.** Measured: gemma replay **1.2s/cand** (fits ~6750 in 9000s) vs generation
+  **9.1s/cand** (asym 0.13, 7.5×). The "8-hop replay cost" guess is REFUTED; 700 is NOT replay-bound — it's
+  **generation-over-relay** (run() probes each candidate at ~9s ⇒ ~700-990 max, matching the wall). Confirms
+  E4o's asymmetry; contradicts E4q's "no asymmetry" reading.
+- [ ] **REORIENTED gemma lever (E5g) — generation cost / blind-emit into replay's measured headroom.** Replay
+  has ~6750 room but generation caps us at ~700. Sub-levers: (1) cheaper probing (1-hop fill E4y lifted
+  589→780; push further); (2) blind-emit toward replay headroom. **BUT first reconcile the honest unknown:**
+  if replay fits ~6750, why did blind-1200 VOID (E4q) and gemma-blind 850/1000 DEGRADE (E5c)? Scaled-lab vs
+  real-board mismatch, or blind candidates don't fire beyond ~700. **Level-2 end-to-end test BEFORE a slot —
+  do not guess.** Message-wording lever is dead (E5f).
 `attack.py` FORGE_MODE=True (calibrate plain-vs-forge → keep faster → validation-fill; self-sizes, no overrun).
 - [ ] **v13: notext auto-router — SUBMITTED (ref 55185855), scored rerun PENDING.** Projects ~89-94
   (E4u). gpt_oss→forge (0.73s), gemma→notext (0.94s vs plain 1.18s). Awaiting the board score.

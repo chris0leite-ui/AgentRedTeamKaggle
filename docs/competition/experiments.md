@@ -42,13 +42,41 @@ steps**. One entry per submission or notable local run.
   (Aside: notext is NOT faster than plain here (0.95 vs 0.92s) — the E4u "notext 1.25×" edge didn't reproduce;
   the router self-selects the cheapest anyway, so no action.)
 - **Both cost-levers now closed ⇒ 84.285 is confirmed the design ceiling.** No message/blind lever remains.
-- **THE SHARPENED PUZZLE (the real gemma question):** the lab clocks a gemma candidate at **~0.93s over 2
-  hops**; at that cost the 9000s budget would fit THOUSANDS — yet gemma caps at 700 and *degrades* above it
-  (850→row 58.4, 1000→56.2). So the 700 wall is **NOT** per-candidate generation cost. The binding term must
-  be the **real 8-hop REPLAY cost** (grader replays at DEFAULT_MAX_TOOL_HOPS=8, not the 2 the tokprof timed),
-  and/or a generation-probe cap. **Next lever = the `--gateway` lab (E4g): runs the real `_replay_and_score`
-  offline → measure true per-candidate replay seconds and why 700 is the wall.** This — not message wording —
-  is the only remaining path to understanding the ~112 gemma gap. Pair with the private track (E-P2).
+- **THE SHARPENED PUZZLE (the real gemma question):** the tokprof lab clocks a gemma candidate at ~0.93s
+  over 2 hops; at that cost the 9000s budget would fit THOUSANDS — yet gemma caps at 700 and *degrades*
+  above it (850→row 58.4, 1000→56.2). **A first guess was "the real 8-hop REPLAY cost is the binding term"
+  — MEASURED AND REFUTED in E5g below.** (The `DEFAULT_MAX_TOOL_HOPS=8` ceiling is real [api.py:9] but the
+  loop breaks early on a final answer [sandbox.py:236]; our candidate exits after 2 hops, so replay ≠ 8×.)
+  The `--gateway` lab (E5g) settles it by direct measurement.
+
+### E5g — gateway lab: REPLAY is cheap; GENERATION (relayed) is the bottleneck (measured, refutes the guess)
+- **Date:** 2026-08-03. Ran the real gateway `_replay_and_score` on both GGUF models (`attack-gateway-harness`,
+  N=24/model, scaled 300s budget). Measured per-candidate **generation vs replay** seconds:
+
+  | model · single-post | generation | replay | asym (replay/gen) | replay fits 9000s |
+  |---|---|---|---|---|
+  | **gemma** | 9.1 s/cand | **1.2 s/cand** | 0.13 | **~6750** |
+  | **gpt_oss** | 5.9 s/cand | 2.7 s/cand | 0.46 | ~3000 |
+
+- **Observations:**
+  - **My "8-hop replay is expensive (~11-12s)" hypothesis is REFUTED.** Real replay = **1.2s/cand (gemma)**,
+    2.7s (gpt_oss). Replay is CHEAP and has huge headroom (~6750 gemma). 700 is NOT replay-bound. (The
+    ~11-12s I floated was reverse-engineered to fit 700 — a guess, now measured away.)
+  - **The bottleneck is GENERATION, not replay.** gemma generation = 9.1s/cand = **7.5× its replay cost**
+    (asym 0.13). run()'s validation-fill probes each candidate through the relayed agent at ~9s each ⇒ the
+    9000s generation budget produces only ~700-990 gemma candidates — **matching the observed ~700 wall** —
+    while replay sits idle with room for ~6750. **We are generation-starved, not replay-bound.** This
+    CONFIRMS E4o's gen≫replay relay-asymmetry hypothesis and CONTRADICTS E4q's "replay≈generation, no
+    asymmetry" reading (that reading was wrong; E4q's blind-1200 void had another cause).
+  - The lab's own verdict: *"the real-board failure is NOT in the replay code path; suspect
+    generation-over-relay or hardware timing."*
+- **HONEST UNKNOWNS (do not guess again — measure):** if replay fits ~6750, why did the real board (a) void
+  at blind-1200 (E4q) and (b) *degrade* at gemma-blind 850/1000 (E5c)? The scaled lab (300s, T4) may not
+  match real-board replay/hardware, OR blind candidates beyond ~700 don't fire on the board. Unresolved.
+- **Reoriented lever (measured, not guessed):** the gemma gap is a **generation-cost / relay** problem. Two
+  sub-levers: (1) cut generation cost per candidate (cheaper probing — 1-hop fill E4y already lifted 589→780;
+  push further), (2) **blind-emit into replay's measured headroom** — but first reconcile the E4q void /
+  850-degrade with a Level-2 end-to-end test before spending a slot. Message wording is confirmed dead (E5f).
 
 ---
 
