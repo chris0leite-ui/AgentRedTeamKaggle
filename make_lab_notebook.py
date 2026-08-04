@@ -1891,6 +1891,7 @@ print("REPLAY_SAFE_SIZING =", attack_mod.REPLAY_SAFE_SIZING, "| ONE_HOP_GEMMA_FI
 
 gw = gwmod.JEDAttackGateway.__new__(gwmod.JEDAttackGateway)
 gw._fixtures_dir = FIX
+_ALL_SAFE = True
 
 for model in MODELS:
     print(f"\\n{'='*60}\\n=== {model}: replay-safe run() @ budget {BUDGET:.0f}s ===\\n{'='*60}", flush=True)
@@ -1912,11 +1913,13 @@ for model in MODELS:
         rep_s = time.monotonic() - t1
         score = res.get("score"); nf = len(res.get("findings", []) or [])
         over_gen = gen_s > BUDGET; over_rep = rep_s > BUDGET
+        if over_gen or over_rep: _ALL_SAFE = False
         proj = n * (9000.0 / BUDGET)
         print(f"  REPLAY: {rep_s:.0f}s ({rep_s/max(n,1):.2f}s/cand) | validated={nf}/{n} | score={score}", flush=True)
         print(f"  >> gen_fit={not over_gen} replay_fit={not over_rep}  => {'SAFE (no overshoot)' if not (over_gen or over_rep) else 'OVERSHOOT — DO NOT SUBMIT'}", flush=True)
         print(f"  >> projected @9000s ~= {min(2000, proj):.0f} candidates (row ~= {min(1000.0, 0.09*min(2000,proj)):.0f})", flush=True)
     except gwmod.GatewayRuntimeError as e:
+        _ALL_SAFE = False
         print(f"  REPLAY RAISED (would VOID on the board): {str(e)[:160]} — DO NOT SUBMIT", flush=True)
     try: gw._unload_model(model)
     except Exception: pass
@@ -1926,7 +1929,10 @@ for model in MODELS:
     except Exception: pass
 
 print("\\n==================== SIZE-CHECK VERDICT ====================", flush=True)
-print("SAFE on every model => the replay-safe port does not overshoot; submit to read the real ceiling.", flush=True)
+if _ALL_SAFE:
+    print("SAFE on every model => the replay-safe port does not overshoot; OK to submit.", flush=True)
+else:
+    print("OVERSHOOT on >=1 model => DO NOT SUBMIT; lower REPLAY_SAFE_FRAC / raise coef and re-verify.", flush=True)
 '''
 sizecheck_harness = sizecheck_harness.replace("__SIZECHECK_BUDGET_S__", str(SIZECHECK_BUDGET_S)).replace("__SIZECHECK_MODELS__", SIZECHECK_MODELS)
 

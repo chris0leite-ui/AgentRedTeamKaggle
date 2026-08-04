@@ -87,7 +87,11 @@ _TAIL_MARGIN = 2.0
 # blind-emit whose overshoot caused the E4q void / E5c degrade (E5h: offline the score is linear to
 # N=1200; E5i: the gap to the field is that we never sized to the replay budget).
 REPLAY_SAFE_SIZING = True
-REPLAY_SAFE_FRAC = 0.97        # fill to this fraction of the (replay AND generation-wall) budget
+REPLAY_SAFE_FRAC = 0.85        # fill to this fraction of the (replay AND generation-wall) budget.
+# E5i sizecheck: 0.97 left gpt_oss replay 8s OVER a 1200s budget — the fill-probe under-measures the true
+# replay by a few % (probe 0.96 vs replay 1.00) and the fresh replay phase also pays its own model-load, so
+# 0.97 sits on the void edge (this is what zeroed E5e's gpt brackets). 0.85 leaves ~15% headroom.
+_REPLAY_COEF_8HOP = 1.10       # safety over-estimate for the full-hop path (probe elapsed → replay cost)
 REPLAY_BUDGET_MULT = 1.0       # replay budget = generation budget · this (both ≈9000s on the board)
 _SLOWEST_MULT = 1.35           # per-candidate cushion applied to the slowest observed probe cost
 _REPLAY_COEF_SAFETY = 1.20     # extra safety on the measured 1-hop→replay ratio (anti-overshoot)
@@ -314,7 +318,7 @@ class AttackAlgorithm(AttackAlgorithmBase):
             if ONE_HOP_GEMMA_FILL and is_gemma:
                 probe_hops, replay_coef = self._calib_replay_coef(env, make, domains, tb, budget_s, best_cost)
             else:
-                probe_hops, replay_coef = max_hops, 1.0
+                probe_hops, replay_coef = max_hops, _REPLAY_COEF_8HOP
             return self._replay_safe_fill(env, make, domains, tb, budget_s, probe_hops,
                                           replay_coef, findings, slowest0=best_cost)
 
@@ -575,10 +579,15 @@ class AttackAlgorithm(AttackAlgorithmBase):
         against a replay-budget overrun (which voids the whole row), so the returned set self-sizes to the
         model's true replay ceiling with no overshoot — measured live, so it adapts to the real board cost."""
         replay_budget = budget_s * REPLAY_BUDGET_MULT
+        # On the real per-model budget (~9000s) generation and replay get SEPARATE budgets, so fill to
+        # REPLAY_SAFE_FRAC. On the tiny interactive self-test (budget < 300s), eval_attack runs generation
+        # and replay back-to-back within a tight window, so leave a big cushion (fill to 0.45) or the fill
+        # starves the replay and TimeoutErrors.
+        frac = REPLAY_SAFE_FRAC if budget_s >= 300 else 0.45
         # Fold the wall-clock already spent (warm-up + calibration) into the replay cap so the fresh replay
         # phase — which pays its own model-load — is left the same cushion.
-        replay_cap = REPLAY_SAFE_FRAC * replay_budget - (budget_s - tb.remaining())
-        wall_cap = REPLAY_SAFE_FRAC * budget_s
+        replay_cap = frac * replay_budget - (budget_s - tb.remaining())
+        wall_cap = frac * budget_s
         replay_cost = 0.0
         slowest = max(slowest0, _LAT_FLOOR_S)
         while len(findings) < MAX_FINDINGS:
