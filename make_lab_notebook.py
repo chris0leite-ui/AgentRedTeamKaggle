@@ -1704,6 +1704,18 @@ for model in MODELS:
 print("\\n==================== GATEWAY-HARNESS VERDICT ====================", flush=True)
 for r in rows:
     print(r, flush=True)
+
+# THE 700-WALL TEST: convert the REAL 8-hop replay cost into an implied candidate ceiling at the
+# board's true 9000s replay budget, and compare to the observed gemma peak (~700, E4y/E5c). If the
+# implied ceiling ~700, the wall is the 8-hop replay cost (NOT generation, which tokprof clocked at
+# ~0.93s/2-hop) -> the leaders' ~1254 gemma candidates must replay CHEAPER (fewer executed hops).
+print("\\n-- implied replay ceiling at the real 9000s budget --", flush=True)
+for r in rows:
+    rpc = r.get("replay_s_per_cand")
+    if r["config"] == "single" and rpc:
+        implied = 0.9 * 9000.0 / rpc  # 0.9 = replay-safe fill fraction
+        print(f"  {r['model']}: real replay {rpc}s/cand (8 hops) -> ~{implied:.0f} cand fit 9000s "
+              f"(observed: gemma peaks ~700, gpt_oss ~1200)", flush=True)
 for model in {r["model"] for r in rows}:
     s = next((r for r in rows if r["model"] == model and r["config"] == "single"), None)
     d = next((r for r in rows if r["model"] == model and r["config"] == "dense"), None)
