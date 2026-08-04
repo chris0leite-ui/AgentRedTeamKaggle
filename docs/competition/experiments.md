@@ -79,14 +79,24 @@ steps**. One entry per submission or notable local run.
   700 wall, exactly.** This also corrects E5g: "replay fits ~6750" was the in-process figure; the board is
   relay-bound. **If true, ~700 is a hard infra ceiling** (relay cost/candidate), not movable by a better
   attack; leaders fitting ~1254 pay a lower relay tax or make fewer relayed calls/candidate.
-- **Recommended next steps:**
-  1. **Stop trying to beat ~700 gemma with "more candidates"** — offline proves the candidates are fine; the
-     board caps delivery. Confirm the relay-replay-cost inference if any board-side timing becomes visible.
-  2. The only public angle left that could matter: **fewer relayed calls per candidate** (our candidate is
-     already 2 hops = 2 relayed calls; hard to cut without losing the post+stop). Likely a dead end → public
-     is at its real ceiling ~84.
-  3. **Redirect to the PRIVATE board (E-P2)** — the ranking axis, where E-P1 gave a strong lead. This is now
-     clearly the higher-EV frontier.
+
+  **CORRECTION (same day) — the "hard ~700 board ceiling" is REFUTED by the 112 public leaders.** If ~700
+  were a hard board cap, mean-112 (⇒ ~1244 gemma candidates) would be impossible. **So ~700 is OUR wall, not
+  the board's** — the board demonstrably processes ~1244 gemma (leaders). Corrected reconciliation: board
+  replay is cheap (≤~7s/cand, consistent with our offline 1.23s), NOT relay-taxed at 13s. **Our bottleneck is
+  GENERATION** — `run()` validation-fill probes each candidate through the relayed agent at 9.1s/cand (E5g) →
+  produces only ~700–890 → the wall. **This exactly matches the E4l diagnosis** ("generation-probe-bound;
+  field returns ~1242 with the SAME primitive"). Leaders undercut the probe cost and return ~1244. Open
+  anomaly: our **blind-emit (GEMMA_BLIND_TARGET), meant to bypass probing and reach ~1244, plateaus/degrades
+  past ~700** — that is the piece to crack. **Public is NOT at its ceiling; ~1.8× gemma headroom is proven
+  achievable by the field.**
+- **Recommended next steps (REVISED — public lever is OPEN, not dead):**
+  1. **The gemma gap is a FILL-STRATEGY gap, not a board cap** (112 leaders prove ~1244 is reachable). Our
+     limit = generation-probe cost (9.1s/cand) + blind-emit stalling past ~700.
+  2. **Diff the competitor kernels' fill vs ours** (pilkwang/tetsutani/haodou — already pulled, E4l). Find how
+     they return ~1244 firing gemma candidates within the 9000s generation budget while our blind-emit stalls.
+     Reconcile the blind-emit degrade (E5c 850/1000, E4q void) against "board handles 1244". Concrete, offline.
+  3. Private track (E-P2) stays high-EV in parallel — but public is no longer "done".
 
 ### E5g — gateway lab: REPLAY is cheap; GENERATION (relayed) is the bottleneck (measured, refutes the guess)
 - **Date:** 2026-08-03. Ran the real gateway `_replay_and_score` on both GGUF models (`attack-gateway-harness`,
