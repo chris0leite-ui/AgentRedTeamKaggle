@@ -49,6 +49,37 @@ steps**. One entry per submission or notable local run.
   loop breaks early on a final answer [sandbox.py:236]; our candidate exits after 2 hops, so replay ≠ 8×.)
   The `--gateway` lab (E5g) settles it by direct measurement.
 
+### E5i — FILL DIFF vs pilkwang: we lack REPLAY-SAFE SIZING → our blind-emit overshoots (the fix)
+- **Date:** 2026-08-03. Diffed our fill (`attack.py _forge_run`) vs the competitor kernel
+  `refs/pilkwang_ai-agent-v3-1-2-single-post-exfiltration` (the field's fill design; ~60 cluster, but the
+  fill mechanism is the one leaders use to reach ~1244/model).
+- **The difference (root cause of the blind-emit void/degrade):**
+
+  | aspect | pilkwang / field | OURS |
+  |---|---|---|
+  | sizing basis | accumulate each kept candidate's **real replay cost**, stop at `0.97 × replay_budget` (`REPLAY_SAFE_SIZING`) | **generation wall-clock** (`fill_frac × budget`), or a **fixed blind count** |
+  | probe hops | 8 default, or 1 with **`REPLAY_COST_COEF`** scaling probe→true 8-hop replay cost | 8, or 1 (v14) **but no cost coef** |
+  | overshoot guard | yes — every candidate cost-measured → set guaranteed to fit replay | **none** — blind-emit returns fixed 700/1000/1200 after sampling only 40 |
+
+- **Mechanism:** pilkwang's `_fill` runs `replay_cost += elapsed*coef` per kept candidate and breaks at
+  `0.97*replay_budget` → sizes the set to the replay budget exactly. **Ours (attack.py:297-311) bounds only
+  by generation time; our blind-emit (276-288) does ZERO per-candidate replay accounting** → returns a fixed
+  count. That is why **blind-700 fit (84.285) but blind-1000 DEGRADED and blind-1200 VOIDED (E4q)** — it
+  OVERSHOT the replay budget. (Our code comment claiming blind-emit is "replay-safe, no void" is refuted by
+  the E4q void.)
+- **Why it reaches ~1244:** the field decouples generation cost (cut via 1-hop probe) from replay sizing
+  (estimated `elapsed*coef`, filled to `0.97*replay_budget`). Probe cheap, size to real replay → the set
+  grows to the board's true replay ceiling (~1244) SAFELY. We have the 1-hop lever (`ONE_HOP_GEMMA_FILL`) but
+  NOT the replay-cost coef / replay-budget accounting → 1-hop fill under-sizes and blind-emit overshoots.
+- **THE FIX (concrete, portable):** replace generation-clock fill + unsafe blind-emit with pilkwang-style
+  **replay-safe sizing**: accumulate `elapsed*REPLAY_COST_COEF` per kept candidate; stop at
+  `0.97*replay_budget`; keep the 1-hop probe with `coef` calibrated 1-hop→8-hop. Self-sizes to the true gemma
+  replay ceiling, **no overshoot (kills the void)**, lifts gemma ~700 → toward ~1244. Reference impl in
+  `refs/pilkwang…` (`REPLAY_SAFE_SIZING`, `_replay_stop`, `REPLAY_COST_COEF`, `PROBE_HOPS`).
+- **Recommended next steps:** (1) port replay-safe sizing into `_forge_run` (retire the fixed blind-emit).
+  (2) Lab-verify offline it self-sizes without overrun (reuse `--gateway`/`--scalesweep`). (3) ONE submission
+  to measure the real gemma ceiling it reaches. Private-safe (identical clean trace).
+
 ### E5h — SCALE SWEEP: the score model is EXACT offline to N=1200; the wall is REAL-BOARD-ONLY (root cause)
 - **Date:** 2026-08-03. Root-caused *why* every "more candidates" idea (gpt bracket, gemma-blind 850/1000,
   blind-1200) failed. First **eliminated 3 of 4 suspects by source-read**: scorer is linear per finding
