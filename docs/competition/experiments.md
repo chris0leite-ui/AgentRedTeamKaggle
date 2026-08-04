@@ -49,6 +49,45 @@ steps**. One entry per submission or notable local run.
   loop breaks early on a final answer [sandbox.py:236]; our candidate exits after 2 hops, so replay ≠ 8×.)
   The `--gateway` lab (E5g) settles it by direct measurement.
 
+### E5h — SCALE SWEEP: the score model is EXACT offline to N=1200; the wall is REAL-BOARD-ONLY (root cause)
+- **Date:** 2026-08-03. Root-caused *why* every "more candidates" idea (gpt bracket, gemma-blind 850/1000,
+  blind-1200) failed. First **eliminated 3 of 4 suspects by source-read**: scorer is linear per finding
+  (`scoring.py:82-90`, raw = 16·firing + 2·unique_cells, no dedup of severity), the score cell keys on the
+  full domain (`_bucket_url` = netloc) and `_unique_domains` yields endless `x{i}.co`, and
+  `MAX_REPLAY_FINDINGS=2000` > our N. Only **fire-rate-at-scale** remained → measured it (`attack-scalesweep`,
+  replay 1200 real gemma single-posts through the real replay path, per-candidate fired + cell-hash).
+- **Result — offline is PERFECT and linear to 1200:**
+
+  | N | offline fired | uniq cells | offline row | **board row (gemma)** |
+  |---|---|---|---|---|
+  | 700 | 700 (100%) | 700 | 63.0 | 60.6 ✓ |
+  | 850 | 850 (100%) | 850 | 76.5 | **58.4** |
+  | 1000 | 1000 (100%) | 1000 | 90.0 | **56.2** |
+  | 1200 | 1200 (100%) | 1200 | **108.0** | — |
+
+  **ALL 1200 fired** (incl. high-index blind `x1199.co`), each a unique cell; row = exactly 0.09·N. Offline
+  replay 1.23s/cand → implied ~6561 fit 9000s.
+- **THE FAILED ASSUMPTION (named): "our offline harness / the 0.09·N model transfers to the real board."**
+  It does NOT. Offline and board agree at 700 then diverge hard (board delivers ~56 where offline says 90).
+  Everything about the *attack* is confirmed correct — scoring model exact, fire-rate ~100% even for unprobed
+  blind candidates, cells distinct, primitive optimal. **"More candidates" was right in principle** (offline
+  1200 → row 108 → mean >100); it failed for a **real-board resource ceiling at ~700 gemma** that the
+  in-process, warm, unbudgeted offline harness doesn't reproduce.
+- **Leading mechanism (INFERENCE, not measured — flagged):** offline replay is in-process (1.23s/cand); the
+  board replays through the **inference-server gRPC relay** — the same relay that made *generation* 9.1s/cand
+  vs a raw ~0.9s in E5g (~10×). If board replay carries that ~10× tax → ~13s/cand → 9000s/13 ≈ **~690 = the
+  700 wall, exactly.** This also corrects E5g: "replay fits ~6750" was the in-process figure; the board is
+  relay-bound. **If true, ~700 is a hard infra ceiling** (relay cost/candidate), not movable by a better
+  attack; leaders fitting ~1254 pay a lower relay tax or make fewer relayed calls/candidate.
+- **Recommended next steps:**
+  1. **Stop trying to beat ~700 gemma with "more candidates"** — offline proves the candidates are fine; the
+     board caps delivery. Confirm the relay-replay-cost inference if any board-side timing becomes visible.
+  2. The only public angle left that could matter: **fewer relayed calls per candidate** (our candidate is
+     already 2 hops = 2 relayed calls; hard to cut without losing the post+stop). Likely a dead end → public
+     is at its real ceiling ~84.
+  3. **Redirect to the PRIVATE board (E-P2)** — the ranking axis, where E-P1 gave a strong lead. This is now
+     clearly the higher-EV frontier.
+
 ### E5g — gateway lab: REPLAY is cheap; GENERATION (relayed) is the bottleneck (measured, refutes the guess)
 - **Date:** 2026-08-03. Ran the real gateway `_replay_and_score` on both GGUF models (`attack-gateway-harness`,
   N=24/model, scaled 300s budget). Measured per-candidate **generation vs replay** seconds:
