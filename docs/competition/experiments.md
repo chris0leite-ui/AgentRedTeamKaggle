@@ -56,6 +56,23 @@ steps**. One entry per submission or notable local run.
   loop breaks early on a final answer [sandbox.py:236]; our candidate exits after 2 hops, so replay ≠ 8×.)
   The `--gateway` lab (E5g) settles it by direct measurement.
 
+### E5j — SUBMITTED: replay-safe sizing v15 (gemma self-sizes, cap 1000) — PENDING
+- **Date:** 2026-08-04. Shipped the E5i port. `attack-replaysafe-v15` (ref **55239794**), 4 slots left.
+  Config: **gemma** = replay-safe 1-hop fill (`_replay_safe_fill`, FRAC 0.85, coef 1.20× safety, **capped at
+  1000** for a bounded first board test); **gpt_oss** = unchanged proven generation-clock fill (~1200/108).
+- **Pre-submit lab-verify (sizecheck, real gemma @ 1200s):** self-sizes WITHOUT offline overshoot — FRAC 0.85
+  → 819 cand / replay 916s (24% margin); FRAC 0.90 → 1035 / 1148s (4% margin). Shipped 0.85. GREEN gate PASS.
+- **What it tests (the open question):** does returning >700 notext candidates SCORE (E5h: offline linear to
+  1200 → row 108) or DEGRADE/VOID (E5c blind 850/1000 degraded; slot2 hardstop voided)? The board's ~700 cap
+  is the unresolved E5h "real-board-only" mystery; this submission resolves it.
+- **Downside is bounded:** the public LB keeps our BEST prior submission (84.285) regardless, so a void here
+  scores low but does NOT lose 84.285. The cap (1000) and FRAC 0.85 + coef safety bound the overshoot.
+- **Read when scored:** (a) public > 84.285 ⇒ replay-safe sizing beats blind-700 ⇒ the gemma cap was our
+  FILL, not the candidate ⇒ lift `_GEMMA_REPLAY_CAP`, push toward the field's ~1244. (b) public ≈ 84 or
+  degrades ⇒ the ~700 cap is the notext CANDIDATE on the board ⇒ the real lever is a cheaper gemma replay
+  candidate (unsolved; tokprof says token-floor). (c) void ⇒ the board replay cost exceeds what the 1-hop
+  probe measures (hidden E5h cost) ⇒ revert to blind-700, pivot to private.
+
 ### E5i — FILL DIFF vs pilkwang: we lack REPLAY-SAFE SIZING → our blind-emit overshoots (the fix)
 - **Date:** 2026-08-03. Diffed our fill (`attack.py _forge_run`) vs the competitor kernel
   `refs/pilkwang_ai-agent-v3-1-2-single-post-exfiltration` (the field's fill design; ~60 cluster, but the

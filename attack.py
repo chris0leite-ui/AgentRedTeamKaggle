@@ -87,9 +87,12 @@ _TAIL_MARGIN = 2.0
 # blind-emit whose overshoot caused the E4q void / E5c degrade (E5h: offline the score is linear to
 # N=1200; E5i: the gap to the field is that we never sized to the replay budget).
 REPLAY_SAFE_SIZING = True
-REPLAY_SAFE_FRAC = 0.90        # gemma-only fill fraction of the replay budget. 0.97 sat on the edge
-# (E5i sizecheck: gemma replay 1179s vs a 1200s budget, 1.7% margin); 0.90 leaves ~10% headroom, and the
-# per-candidate coef already carries a 1.20× safety over-estimate. gemma degrades (not voids) on overrun.
+REPLAY_SAFE_FRAC = 0.85        # gemma-only fill fraction of the replay budget. sizecheck: 0.90 left only
+# ~4% replay margin at a 1200s budget; 0.85 restored ~24% headroom. The per-candidate coef also carries a
+# 1.20× safety over-estimate, and gemma degrades (not voids) on overrun for the notext message.
+_GEMMA_REPLAY_CAP = 1000       # E5i first board test: cap the replay-safe set just above the known-good 700
+# (E5c) to BOUND the downside while probing whether >700 notext candidates score (offline) or degrade/void
+# (the unresolved E5h board mystery). Lift once a submission shows the board scores past 700.
 REPLAY_BUDGET_MULT = 1.0       # replay budget = generation budget · this (both ≈9000s on the board)
 _SLOWEST_MULT = 1.35           # per-candidate cushion applied to the slowest observed probe cost
 _REPLAY_COEF_SAFETY = 1.20     # extra safety on the measured 1-hop→replay ratio (anti-overshoot)
@@ -585,7 +588,8 @@ class AttackAlgorithm(AttackAlgorithmBase):
         wall_cap = frac * budget_s
         replay_cost = 0.0
         slowest = max(slowest0, _LAT_FLOOR_S)
-        while len(findings) < MAX_FINDINGS:
+        cap = min(MAX_FINDINGS, _GEMMA_REPLAY_CAP)        # bounded first board test (E5i)
+        while len(findings) < cap:
             wall_used = budget_s - tb.remaining()
             next_wall = slowest * _SLOWEST_MULT           # est. FILL cost of the next probe
             next_replay = next_wall * replay_coef         # est. REPLAY cost of the next candidate
