@@ -182,7 +182,7 @@ SCALESWEEP_CKPTS = [50, 200, 500, 700, 850, 1000, 1200]
 # Size-check: run the NEW replay-safe run() on the real model at a MEDIUM budget; verify the returned set
 # replays WITHIN budget (would_overrun=False) and self-sizes, before spending a submission.
 SIZECHECK_BUDGET_S = 300.0 if SMOKE else 1200.0
-SIZECHECK_MODELS = "gemma" if SMOKE else "gemma,gpt_oss"
+SIZECHECK_MODELS = "gemma" if SMOKE else "gemma"  # gemma-only: gpt keeps its proven fill (unchanged)
 
 attack_src = (ROOT / "attack.py").read_text()
 

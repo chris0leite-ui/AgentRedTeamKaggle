@@ -87,11 +87,9 @@ _TAIL_MARGIN = 2.0
 # blind-emit whose overshoot caused the E4q void / E5c degrade (E5h: offline the score is linear to
 # N=1200; E5i: the gap to the field is that we never sized to the replay budget).
 REPLAY_SAFE_SIZING = True
-REPLAY_SAFE_FRAC = 0.85        # fill to this fraction of the (replay AND generation-wall) budget.
-# E5i sizecheck: 0.97 left gpt_oss replay 8s OVER a 1200s budget — the fill-probe under-measures the true
-# replay by a few % (probe 0.96 vs replay 1.00) and the fresh replay phase also pays its own model-load, so
-# 0.97 sits on the void edge (this is what zeroed E5e's gpt brackets). 0.85 leaves ~15% headroom.
-_REPLAY_COEF_8HOP = 1.10       # safety over-estimate for the full-hop path (probe elapsed → replay cost)
+REPLAY_SAFE_FRAC = 0.90        # gemma-only fill fraction of the replay budget. 0.97 sat on the edge
+# (E5i sizecheck: gemma replay 1179s vs a 1200s budget, 1.7% margin); 0.90 leaves ~10% headroom, and the
+# per-candidate coef already carries a 1.20× safety over-estimate. gemma degrades (not voids) on overrun.
 REPLAY_BUDGET_MULT = 1.0       # replay budget = generation budget · this (both ≈9000s on the board)
 _SLOWEST_MULT = 1.35           # per-candidate cushion applied to the slowest observed probe cost
 _REPLAY_COEF_SAFETY = 1.20     # extra safety on the measured 1-hop→replay ratio (anti-overshoot)
@@ -308,22 +306,19 @@ class AttackAlgorithm(AttackAlgorithmBase):
                 return findings
             # else: sample under-fired → safer to validation-fill than to blind-emit non-firing candidates
 
-        # E5i: REPLAY-SAFE SIZING (ported from refs/pilkwang) — size the returned set to the REPLAY
-        # budget by accumulating each kept candidate's estimated replay cost, instead of stopping on the
-        # generation clock (which under-sizes at 8-hop, or OVERSHOOTS the replay budget at 1-hop — the
-        # E4q void / E5c degrade). gemma: probe cheap at 1 hop and bridge to the real replay cost with a
-        # calibrated coef. gpt_oss/plain: probe at the full hop cap (coef 1.0 ⇒ probe elapsed == replay
-        # cost). Self-sizes to the model's true replay ceiling with NO overshoot.
-        if REPLAY_SAFE_SIZING:
-            if ONE_HOP_GEMMA_FILL and is_gemma:
-                probe_hops, replay_coef = self._calib_replay_coef(env, make, domains, tb, budget_s, best_cost)
-            else:
-                probe_hops, replay_coef = max_hops, _REPLAY_COEF_8HOP
+        # E5i: REPLAY-SAFE SIZING (ported from refs/pilkwang) — applied to GEMMA ONLY, the row stuck at
+        # ~700. Probe cheap at 1 hop and bridge to the real replay cost with a calibrated coef; accumulate
+        # and stop at REPLAY_SAFE_FRAC·replay_budget so the set self-sizes toward the field's ceiling with
+        # no overshoot (gemma also degrades rather than voids on overrun — E5c). gpt_oss/plain KEEP their
+        # proven generation-clock validation-fill: it already reaches ~1200/row-108 safely (the 84.285 run),
+        # and E5e shows gpt voids beyond ~1250 — so replay-safe sizing there would only add risk/regression.
+        if REPLAY_SAFE_SIZING and ONE_HOP_GEMMA_FILL and is_gemma:
+            probe_hops, replay_coef = self._calib_replay_coef(env, make, domains, tb, budget_s, best_cost)
             return self._replay_safe_fill(env, make, domains, tb, budget_s, probe_hops,
                                           replay_coef, findings, slowest0=best_cost)
 
-        # Legacy generation-clock fill (kept for A/B; used only when REPLAY_SAFE_SIZING=False).
-        fill_hops = 1 if (ONE_HOP_GEMMA_FILL and is_gemma) else max_hops
+        # gpt_oss / plain: proven generation-clock validation-fill (self-sizes to its 8-hop probe cost).
+        fill_hops = max_hops
         slowest = 0.0
         while len(findings) < MAX_FINDINGS:
             if budget_s - tb.remaining() >= deadline:
