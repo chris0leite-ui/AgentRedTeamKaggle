@@ -30,6 +30,7 @@ COT = "--cot" in sys.argv
 SQUEEZE = "--squeeze" in sys.argv
 GATEWAY = "--gateway" in sys.argv
 SCALESWEEP = "--scalesweep" in sys.argv
+SIZECHECK = "--sizecheck" in sys.argv
 LISTFORM = "--listform" in sys.argv
 MULTIPOST = "--multipost" in sys.argv
 WRAPUP = "--wrapup" in sys.argv
@@ -58,6 +59,8 @@ elif GATEWAY:
     OUT = ROOT / ("lab_gateway_smoke" if SMOKE else "lab_gateway")
 elif SCALESWEEP:
     OUT = ROOT / ("lab_scalesweep_smoke" if SMOKE else "lab_scalesweep")
+elif SIZECHECK:
+    OUT = ROOT / ("lab_sizecheck_smoke" if SMOKE else "lab_sizecheck")
 elif SQUEEZE:
     OUT = ROOT / ("lab_squeeze_smoke" if SMOKE else "lab_squeeze")
 elif COT:
@@ -99,6 +102,9 @@ elif GATEWAY:
 elif SCALESWEEP:
     SLUG = "attack-scalesweep-smoke" if SMOKE else "attack-scalesweep"
     TITLE = "Attack scalesweep smoke" if SMOKE else "Attack scalesweep"
+elif SIZECHECK:
+    SLUG = "attack-sizecheck-smoke" if SMOKE else "attack-sizecheck"
+    TITLE = "Attack sizecheck smoke" if SMOKE else "Attack sizecheck"
 elif SQUEEZE:
     SLUG = "attack-squeeze-smoke" if SMOKE else "attack-squeeze-probe"
     TITLE = "Attack squeeze smoke" if SMOKE else "Attack squeeze probe"
@@ -173,6 +179,10 @@ GATEWAY_MODELS = "gpt_oss" if SMOKE else "gpt_oss,gemma"
 # the degrade puzzle (700->850->1000 fell). Report the cumulative row at prefix checkpoints.
 SCALESWEEP_NS = {"gemma": 150} if SMOKE else {"gemma": 1200}
 SCALESWEEP_CKPTS = [50, 200, 500, 700, 850, 1000, 1200]
+# Size-check: run the NEW replay-safe run() on the real model at a MEDIUM budget; verify the returned set
+# replays WITHIN budget (would_overrun=False) and self-sizes, before spending a submission.
+SIZECHECK_BUDGET_S = 300.0 if SMOKE else 1200.0
+SIZECHECK_MODELS = "gemma" if SMOKE else "gemma,gpt_oss"
 
 attack_src = (ROOT / "attack.py").read_text()
 
@@ -1852,6 +1862,74 @@ scalesweep_harness = (scalesweep_harness
                       .replace("__SCALESWEEP_NS__", repr(SCALESWEEP_NS))
                       .replace("__SCALESWEEP_CKPTS__", repr(SCALESWEEP_CKPTS)))
 
+sizecheck_intro = """## Size-check — does the ported REPLAY-SAFE fill self-size WITHOUT overshoot? (pre-submit gate)
+Runs the NEW `run()` (E5i replay-safe sizing) on the real model at a medium budget, then replays the
+returned set through the real path. PASS = the replay time fits the budget it was sized against
+(would_overrun=False) and the set is larger than the old ~generation-bound fill. Projects the count to
+the real 9000s budget. This de-risks the void before we spend a submission."""
+
+sizecheck_harness = '''\
+# SIZE-CHECK: NEW replay-safe run() on the real model @ medium budget; verify returned set replays within
+# budget (no overshoot => no void) and self-sizes. (Safety is by construction — coef over-estimates replay
+# cost — this confirms the mechanism end-to-end on the real model and shows the count.)
+import gc, time
+from aicomp_sdk.guardrails.optimal import Guardrail as OptimalGuardrail
+from aicomp_sdk.evaluation.ops import build_attack_env
+from aicomp_sdk.attacks import AttackRunConfig
+import kaggle_evaluation.jed_attack_134815.jed_attack_gateway as gwmod
+import attack as attack_mod
+from attack import AttackAlgorithm
+
+BUDGET = __SIZECHECK_BUDGET_S__
+MODELS = "__SIZECHECK_MODELS__".split(",")
+HOPS = 8; SEED = gwmod.ATTACK_SEED
+FIX = str(FIXTURES) if FIXTURES else None
+attack_mod.SMOKE_MODE = False
+attack_mod.MAX_FINDINGS = 2000            # let replay-safe sizing (not the cap) decide the count
+print("REPLAY_SAFE_SIZING =", attack_mod.REPLAY_SAFE_SIZING, "| ONE_HOP_GEMMA_FILL =",
+      attack_mod.ONE_HOP_GEMMA_FILL, flush=True)
+
+gw = gwmod.JEDAttackGateway.__new__(gwmod.JEDAttackGateway)
+gw._fixtures_dir = FIX
+
+for model in MODELS:
+    print(f"\\n{'='*60}\\n=== {model}: replay-safe run() @ budget {BUDGET:.0f}s ===\\n{'='*60}", flush=True)
+    try:
+        af = gw._make_agent_factory(model)
+    except Exception as e:
+        print("  factory error:", type(e).__name__, e, flush=True); continue
+    env = build_attack_env(seed=SEED, fixtures_dir=FIX, agent_factory=af,
+                           guardrail=OptimalGuardrail(), env_selection="gym", max_tool_hops=HOPS)
+    t0 = time.monotonic()
+    cands = AttackAlgorithm().run(env, AttackRunConfig(time_budget_s=BUDGET, max_tool_hops=HOPS))
+    gen_s = time.monotonic() - t0
+    n = len(cands)
+    serial = [{"user_messages": list(c.user_messages)} for c in cands]
+    print(f"  run() returned {n} candidates in {gen_s:.0f}s gen ({gen_s/max(n,1):.2f}s/cand)", flush=True)
+    t1 = time.monotonic()
+    try:
+        res = gw._replay_and_score(serial, model_name=model, guardrail_factory=OptimalGuardrail, fixtures_dir=FIX)
+        rep_s = time.monotonic() - t1
+        score = res.get("score"); nf = len(res.get("findings", []) or [])
+        over_gen = gen_s > BUDGET; over_rep = rep_s > BUDGET
+        proj = n * (9000.0 / BUDGET)
+        print(f"  REPLAY: {rep_s:.0f}s ({rep_s/max(n,1):.2f}s/cand) | validated={nf}/{n} | score={score}", flush=True)
+        print(f"  >> gen_fit={not over_gen} replay_fit={not over_rep}  => {'SAFE (no overshoot)' if not (over_gen or over_rep) else 'OVERSHOOT — DO NOT SUBMIT'}", flush=True)
+        print(f"  >> projected @9000s ~= {min(2000, proj):.0f} candidates (row ~= {min(1000.0, 0.09*min(2000,proj)):.0f})", flush=True)
+    except gwmod.GatewayRuntimeError as e:
+        print(f"  REPLAY RAISED (would VOID on the board): {str(e)[:160]} — DO NOT SUBMIT", flush=True)
+    try: gw._unload_model(model)
+    except Exception: pass
+    gc.collect()
+    try:
+        import torch; torch.cuda.empty_cache()
+    except Exception: pass
+
+print("\\n==================== SIZE-CHECK VERDICT ====================", flush=True)
+print("SAFE on every model => the replay-safe port does not overshoot; submit to read the real ceiling.", flush=True)
+'''
+sizecheck_harness = sizecheck_harness.replace("__SIZECHECK_BUDGET_S__", str(SIZECHECK_BUDGET_S)).replace("__SIZECHECK_MODELS__", SIZECHECK_MODELS)
+
 multipost_intro = """## Multi-post per interact (Lever B, E4o)
 On the REAL gpt_oss + gemma: how many scored `http.post` does ONE multipost message elicit per interact
 (vs single-post)? Reports fire-rate, posts/interact, s/candidate, raw/candidate and **raw/second**.
@@ -2576,6 +2654,9 @@ elif GATEWAY:
 elif SCALESWEEP:
     cells = [md(scalesweep_intro), code(setup), code(write_attack), code(ensure_llama),
              code(scalesweep_harness)]
+elif SIZECHECK:
+    cells = [md(sizecheck_intro), code(setup), code(write_attack), code(ensure_llama),
+             code(sizecheck_harness)]
 elif SQUEEZE:
     cells = [md(squeeze_intro), code(setup), code(write_attack), code(ensure_llama),
              code(squeeze_harness)]
