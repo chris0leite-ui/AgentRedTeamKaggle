@@ -64,6 +64,40 @@ def run_case(label: str, agent_factory, budget_s: float, expect_fire: bool) -> b
     return ok
 
 
+def run_replaysafe_unit() -> bool:
+    """Directly exercise the SHIPPED gemma replay-safe branch (`_calib_replay_coef` + `_replay_safe_fill`)
+    against a FIRING env. The eval_attack cases route to the LEGACY fill on a calibration tie (uniform mock
+    latency), and the notebook self-test uses a non-firing agent — so without this, the gemma path that
+    actually ships is only compile-checked, never run (code review, agents: contract/correctness)."""
+    label = "replay-safe unit (gemma path runs + sizes)"
+    try:
+        from aicomp_sdk.core.env.sandbox import SandboxEnv
+        from aicomp_sdk.guardrails.optimal import Guardrail as OptimalGuardrail
+        from aicomp_sdk.utils.timebox import Timebox
+        algo = AttackAlgorithm()
+        env = SandboxEnv(seed=123, fixtures_dir=FIXTURES,
+                         agent=ObedientExfilAgent(latency_s=0.02), guardrail=OptimalGuardrail())
+        env.reset()
+        budget_s = 12.0
+        tb = Timebox(budget_s)
+        domains = algo._unique_domains()
+        make = algo._notext_message
+        # Measure a REAL 8-hop probe cost (what the shipped path passes as best_cost) so the coef is
+        # realistic — hard-coding it would inflate coef vs the fast mock and stall the fill artificially.
+        _t = tb.remaining()
+        algo._probe(env, [make(next(domains))], 8)
+        full_cost = max(1e-3, _t - tb.remaining())
+        probe_hops, coef = algo._calib_replay_coef(env, make, domains, tb, budget_s, full_cost=full_cost)
+        out = algo._replay_safe_fill(env, make, domains, tb, budget_s, probe_hops, coef, [], slowest0=full_cost)
+    except Exception as e:  # noqa: BLE001
+        print(f"[FAIL] {label}: raised {type(e).__name__}: {e}")
+        return False
+    ok = (probe_hops == 1 and coef >= 1.0 and isinstance(out, list) and 1 <= len(out) <= 1000)
+    print(f"[{'PASS' if ok else 'FAIL'}] {label}: probe_hops={probe_hops} coef={coef:.2f} "
+          f"returned={len(out)} candidates")
+    return ok
+
+
 def main() -> int:
     ok = True
     # 1) Real packaged agent: must RUN cleanly (findings may be 0 — that's fine).
@@ -78,6 +112,8 @@ def main() -> int:
     # with margin, keeping the gate meaningful. (Real board = 9000s; K=7 is ~90s there — no issue.)
     ok &= run_case("obedient-mock (must fire)", lambda: ObedientExfilAgent(latency_s=0.5),
                    budget_s=20.0, expect_fire=True)
+    # 3) Directly run the SHIPPED gemma replay-safe branch (routing can hide it from case 2).
+    ok &= run_replaysafe_unit()
     print("\nPRE-SUBMISSION GATE:", "GREEN — safe to submit" if ok else "RED — fix before submit")
     return 0 if ok else 1
 

@@ -67,6 +67,15 @@ if _rscap:
     SLUG = f"attack-rscap-{_rscap}"
     TITLE = f"Attack rscap {_rscap}"
 
+# Accidental-activation guard: a DEFAULT submission (no bracket flag) must ship the committed 0/safe blind
+# targets. A stale non-zero *_BLIND_TARGET would silently bypass replay-safe sizing and can VOID a row
+# (E5e: gpt voids beyond ~1250). Refuse to ship a blind-armed default. (Uniqueness assert on the patched
+# literals below also guards the string-replaces.)
+if not _blind and not _gptblind:
+    assert "GEMMA_BLIND_TARGET = 0" in attack_src and "GPT_BLIND_TARGET = 0" in attack_src, (
+        "default submission but a *_BLIND_TARGET is non-zero in attack.py — refusing to ship a blind-armed "
+        "default (would bypass replay-safe sizing and risk a void)")
+
 
 def code(src: str) -> dict:
     return {"cell_type": "code", "metadata": {}, "execution_count": None,
@@ -122,10 +131,15 @@ else:
     print("placeholder submission.csv written")
     # --- self-test: same run()+replay path the gateway uses, on the deterministic scaffold ---
     try:
-        import importlib.util, glob
+        import importlib, importlib.util, glob
         from pathlib import Path
         from aicomp_sdk.agents import build_agent_factory
         from aicomp_sdk.evaluation.ops import eval_attack, score_attack
+        # Prove the EXACT rerun entrypoint resolves — it is only imported inside the rerun branch above, so
+        # a missing/renamed gateway mount would otherwise slip the gate and only fail on the scored rerun.
+        _srv = importlib.import_module("kaggle_evaluation.jed_attack_134815.jed_attack_inference_server")
+        assert hasattr(_srv, "JEDAttackInferenceServer"), "inference-server class missing — rerun would fail"
+        import kaggle_evaluation  # noqa: F401  (verify the gateway package mount)
         spec = importlib.util.spec_from_file_location("user_attack", "/kaggle/working/attack.py")
         mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
         fx = glob.glob("/kaggle/input/**/aicomp_sdk/fixtures/web_corpus.json", recursive=True)
@@ -141,6 +155,11 @@ else:
         raise
 '''
 
+# Embedding guard: attack.py is embedded in a raw `r'''...'''`. A `'''` or a trailing backslash inside it
+# would silently break the generated cell (only failing on Kaggle → a wasted submission). Fail here instead.
+assert "'''" not in attack_src, "attack.py contains ''' — would break the r'''...''' embedding"
+assert not attack_src.rstrip().endswith("\\"), "attack.py ends with a backslash — invalid in an r'''...'''"
+
 nb = {
     "cells": [code(setup), code(write_attack), code(serve)],
     "metadata": {
@@ -149,6 +168,16 @@ nb = {
     },
     "nbformat": 4, "nbformat_minor": 5,
 }
+
+# Generation-time gate: every emitted code cell must PARSE, and carry no unsubstituted `__TOKEN__`
+# placeholder — catches embedding/escaping bugs (e.g. the earlier \n-vs-\\n break) before push, not on Kaggle.
+import re as _re
+for _c in nb["cells"]:
+    if _c.get("cell_type") == "code":
+        _s = "".join(_c["source"])
+        compile(_s, "<generated-cell>", "exec")
+        assert not _re.search(r"__[A-Z][A-Z0-9_]*__", _s), "unsubstituted __TOKEN__ in a generated cell"
+
 (OUT / "submission.ipynb").write_text(json.dumps(nb, indent=1))
 
 meta = {

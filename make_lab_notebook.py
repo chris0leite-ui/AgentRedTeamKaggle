@@ -2685,6 +2685,18 @@ nb = {
     },
     "nbformat": 4, "nbformat_minor": 5,
 }
+
+# Generation-time gate (same as make_notebook.py): every emitted code cell must PARSE and carry no
+# unsubstituted `__TOKEN__` — catches the 32 unguarded template str.replace()s and embedding/escaping bugs
+# (e.g. the earlier \n-vs-\\n break) at generation, not on a wasted lab run.
+assert "'''" not in attack_src, "attack.py contains ''' — would break the r'''...''' embedding"
+import re as _re
+for _c in nb["cells"]:
+    if _c.get("cell_type") == "code":
+        _s = "".join(_c["source"])
+        compile(_s, "<generated-cell>", "exec")
+        assert not _re.search(r"__[A-Z][A-Z0-9_]*__", _s), "unsubstituted __TOKEN__ in a generated lab cell"
+
 (OUT / "lab.ipynb").write_text(json.dumps(nb, indent=1))
 
 meta = {
