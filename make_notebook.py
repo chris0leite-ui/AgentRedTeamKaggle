@@ -67,6 +67,29 @@ if _rscap:
     SLUG = f"attack-rscap-{_rscap}"
     TITLE = f"Attack rscap {_rscap}"
 
+# `--burstfill=F` (E5p ladder) sets the gpt BURST fill fraction (_BURST_FILL_FRAC, default 0.80). Higher F =
+# more candidates = higher gpt row, but gpt VOIDS on replay overrun — use to map the safe fill edge. Distinct
+# slug per rung. Applies to the gpt/forge burst route only (gemma unchanged).
+_burstfill = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--burstfill=")), "")
+if _burstfill:
+    _bf = float(_burstfill)
+    assert 0.5 <= _bf <= 0.99, f"--burstfill out of range: {_bf}"
+    assert "_BURST_FILL_FRAC = 0.80" in attack_src, "expected _BURST_FILL_FRAC=0.80 default to patch"
+    attack_src = attack_src.replace("_BURST_FILL_FRAC = 0.80", f"_BURST_FILL_FRAC = {_bf}", 1)
+    SLUG = f"attack-burst-f{str(_bf).replace('.', '')}"
+    TITLE = f"Attack burst f{_bf}"
+
+# `--burstk=K` (E5p) sets the gpt BURST width (BURST_K, default 7 = posts/candidate ceiling under the 8-hop
+# replay cap). K=4 is a cheaper/less-attrition candidate; compares burst width at a matched fill. Combine
+# with --burstfill; slug stays distinct.
+_burstk = next((int(a.split("=", 1)[1]) for a in sys.argv[1:] if a.startswith("--burstk=")), 0)
+if _burstk:
+    assert 1 <= _burstk <= 7, f"--burstk out of range: {_burstk}"
+    assert "BURST_K = 7" in attack_src, "expected BURST_K=7 default to patch"
+    attack_src = attack_src.replace("BURST_K = 7", f"BURST_K = {_burstk}", 1)
+    SLUG = f"{SLUG}-k{_burstk}" if (_burstfill) else f"attack-burst-k{_burstk}"
+    TITLE = f"{TITLE} k{_burstk}" if (_burstfill) else f"Attack burst k{_burstk}"
+
 # Accidental-activation guard: a DEFAULT submission (no bracket flag) must ship the committed 0/safe blind
 # targets. A stale non-zero *_BLIND_TARGET would silently bypass replay-safe sizing and can VOID a row
 # (E5e: gpt voids beyond ~1250). Refuse to ship a blind-armed default. (Uniqueness assert on the patched
