@@ -5,6 +5,56 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E5m — THE BOARD LAW: `scored ≈ 818 − 0.207·N`, and WHICH assumption failed us (no submission)
+- **Date:** 2026-08-05. Directive: a better score IS possible; we take reaching it as given. Do NOT retreat
+  to "public is exhausted." Mine the 7 scored points (E5l) for the mechanism.
+- **The fit.** gemma effective count `N_eff = row/0.09` vs returned `N` (blind rungs, cleaner mechanism):
+
+  | N returned | 700 | 1000 | 1400 | 2000 |
+  |---|---|---|---|---|
+  | N_eff scored | 673 | 624 | 507 | 413 |
+
+  Least-squares → **`N_eff ≈ 818 − 0.207·N`** (predicts 673/611/528/404 — tight). Two facts fall out:
+  1. **The replay budget is ~818 candidate-slots.** `9000 s / 818 ≈ 11 s per gemma candidate` on the real
+     board. **This is not a new number — it is exactly assumption C5** ("~9–11× real-board per-interact
+     overhead", VERIFIED E4u). The board fit VINDICATES C4/C5.
+  2. **Every RETURNED candidate costs ~0.21 slots of overhead even if never scored** — so over-returning
+     actively destroys value (the E5l decline). Optimum is where `N_eff = N`: `N* ≈ 818/1.207 ≈ 678`,
+     scored ≈ 678 — which is precisely the observed ~673 peak at N=700. **The ~700 wall is a forced fixed
+     point of an ~11 s/candidate replay, not a fill bug and not a candidate-count we choose.**
+- **The existence proof, quantified.** Leaders sit at ~112 ⇒ gemma_row ~112 ⇒ **~1244 effective gemma
+  candidates**. In this law that is unreachable at our replay cost (max ~678). It becomes reachable iff the
+  per-candidate gemma **replay** cost roughly halves: budget-slots `818 → ~1636`, `N* → ~1355`, row ~122.
+  **So the 84→112 gap is a single, measurable quantity: gemma seconds-per-candidate DURING REPLAY, ÷2.**
+- **WHICH ASSUMPTION FAILED US.** Not C4/C5 — those were right all along. The wrong turn was **E5g's
+  `--gateway` lab reading "replay = 1.2 s/cand → ~7500 fit."** That number CONTRADICTED our own VERIFIED
+  C4/C5 (replay ≈ generation ≈ 11 s/cand) and we followed the lab instead of the board. It made us believe
+  the wall was a *sizing* problem (return more, size smarter — E5i/E5j/E5k, the whole probed-replay-safe
+  detour) when the board had been telling us the wall is *per-candidate replay cost*. **Lesson: when a lab
+  number contradicts a VERIFIED board assumption, distrust the lab first.** The `--gateway` harness is not
+  faithful to board replay (it replayed our short candidate in-process/warm; the board rebuilds the env and
+  re-runs the model per candidate — ops.py:512, 531-532 — at the real ~11 s).
+- **The untested lever (source-located).** Replay cost per candidate = `build_attack_env + reset` (E1: 0.16 s,
+  negligible) + the model re-running the candidate's user message up to `max_tool_hops` (ops.py:531-532).
+  Our candidate takes **2 model turns** in replay (turn 1: the `http.post`; turn 2: the wrap-up final answer
+  after the tool result). E5f killed the wrap-up's *token* count (5-tok floor) but **never tested its
+  *time*** — turn 2 still pays a full prefill over [system+user+toolcall+result]. **If we can end the episode
+  in 1 model turn** (the post IS the last action, no second generation), replay ≈ halves → the ~2× we need.
+  This is the one lever E5f/E5g/E5l never actually measured.
+- **Recommended next steps (no submission until a faithful lab shows the 2×):**
+  1. **Make the `--gateway` lab FAITHFUL** — reproduce the board's per-candidate replay (fresh env rebuild +
+     model re-run per candidate, cold) and confirm it clocks ~11 s/gemma-cand and ~2 model turns. If it does,
+     we finally have an offline instrument that predicts the board (E5g's did not).
+  2. **Hunt the 1-turn candidate** on that faithful lab: does any message form make gemma emit the `http.post`
+     and terminate WITHOUT a second scored model turn (tool-terminated episode, or a first-turn final answer
+     that still fires the exfil predicate)? Measure replay-seconds/cand, target ÷2. Trace stays a clean
+     `http.post(SECRET_MARKER)` ⇒ private-safe.
+  3. Only after the lab shows ÷2, spend ONE submission at `N* ≈ 1250`.
+  4. Keep **gemma blind-700 (84.285) as the shipped floor** we defend while hunting — banking it is NOT
+     surrender, it is protecting the fallback while the real lever (÷2 replay) is under test.
+
+---
+
 ## E5f — spent the day's last 2 slots on the two most-informative probes (+ tokprof lab)
 - **Date:** 2026-08-03. Directive: use the expiring slots to experiment toward >100. **BOTE first (honest):**
   public = mean(gpt_row ~108 hard-capped [E5e], gemma_row ~60.6 peak@700 [E4y]). Even a perfect gpt edge →

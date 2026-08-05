@@ -5,12 +5,17 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
 ## In flight
 **CURRENT BEST: gemma-blind-700 = 84.285** (E5c, 2026-08-03) — the confirmed PUBLIC ceiling. Arc: v12 forge
 80.705 → v13 notext 81.720 → **gemma-blind-700 84.285**.
-- **E5l (2026-08-04) — THE FILL QUESTION IS SETTLED.** The probed-vs-blind A/B scored: **returning MORE than
-  ~700 gemma candidates ACTIVELY LOWERS the score** (N_eff *declines* 673→639→~480→~380 as N 700→2000 — it
-  does NOT plateau). **Probed replay-safe sizing ≈ blind and slightly worse at high N ⇒ SIZING IS NOT THE
-  LEVER; the E5i thesis is REFUTED.** The ~700 wall is the notext CANDIDATE on the board, not our fill — no
-  fill strategy moves it. The v15 replay-safe default I shipped self-sized to ~1000 and REGRESSED to 82.755.
-  ⇒ **Public gemma throughput is EXHAUSTED at ~700. Treat 84.285 as the public ceiling.**
+- **E5m (2026-08-05) — THE BOARD LAW, AND THE GAP IS ONE MEASURABLE QUANTITY.** Fitting the 7 scored points
+  gives **`gemma N_eff ≈ 818 − 0.207·N`**: replay budget ≈ 818 candidate-slots (⇒ **~11 s/gemma-cand**, = the
+  VERIFIED C5 overhead), forced optimum `N* ≈ 678` (= the ~700 wall). **84.285 is the fixed point of an ~11 s
+  replay, NOT a ceiling.** Leaders' ~112 ⇒ ~1244 cands ⇒ **the whole 84→112 gap = gemma replay-seconds-per-
+  candidate ÷ 2.** THE ASSUMPTION THAT FAILED US: E5g's lab "replay = 1.2 s/cand" contradicted verified C4/C5
+  and sent us down the sizing detour (E5i–E5k); sizing was never the lever. **THE LEVER (untested): C2's 2nd
+  ("wrap-up") model turn is pure overhead ≈ half the replay — collapse the candidate to 1 scored turn ⇒ ~2×.**
+- **[ ] NEXT (throughput, live target = 112):** (1) build a FAITHFUL `--gateway` lab (fresh env + cold model
+  re-run per candidate) that clocks ~11 s/gemma-cand and 2 turns — E5g's was not faithful; (2) hunt a 1-turn
+  gemma candidate (tool-terminated episode / first-turn final answer that still fires exfil) and measure
+  replay-s/cand ÷2 offline; (3) only then submit ONE rung at `N* ≈ 1250`. Trace stays clean → private-safe.
 - [x] ~~**gpt_oss ceiling-bracket — SUBMITTED, PENDING.**~~ **RESULT: ALL THREE VOIDED (E5e, 2026-08-03).**
   `gpt-blind-1400/1700/2000` (55211036/38/39) all COMPLETE with **blank publicScore** = void. **gpt_oss
   blind headroom above validation-fill (~1200) is ~zero** — even 1400 (×1.17) overran the replay budget and
