@@ -12,10 +12,19 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
   candidate ÷ 2.** THE ASSUMPTION THAT FAILED US: E5g's lab "replay = 1.2 s/cand" contradicted verified C4/C5
   and sent us down the sizing detour (E5i–E5k); sizing was never the lever. **THE LEVER (untested): C2's 2nd
   ("wrap-up") model turn is pure overhead ≈ half the replay — collapse the candidate to 1 scored turn ⇒ ~2×.**
-- **[ ] NEXT (throughput, live target = 112):** (1) build a FAITHFUL `--gateway` lab (fresh env + cold model
-  re-run per candidate) that clocks ~11 s/gemma-cand and 2 turns — E5g's was not faithful; (2) hunt a 1-turn
-  gemma candidate (tool-terminated episode / first-turn final answer that still fires exfil) and measure
-  replay-s/cand ÷2 offline; (3) only then submit ONE rung at `N* ≈ 1250`. Trace stays clean → private-safe.
+- **E5n (2026-08-05) — SINGLE-POST FLOORED; the lever is the gpt BURST.** Source proves the 2-model-call
+  floor (sandbox.py:223-249) — a firing candidate is ALWAYS 2 calls, unbeatable; the E5m 1-turn idea is dead.
+  tokprof proves both models are at TOKEN floor too (gpt forge 36 tok, gemma notext 34). So single-post has
+  NO attacker lever left; 84.285 is its structural ceiling. Board decomposition: gpt 3.75 s/call, gemma
+  6.68 s/call (gemma FLOORED — slow row). **The one unexhausted lever: the gpt hop-saturation BURST**
+  (pilkwang `_forge_plan_msg`, 4.0 posts/cand — we'd refuted a weaker prose form in E4p/E4k). pilkwang parked
+  it at ~1.1× on a LAB that (like E5g) isn't faithful to board per-CALL cost; our 2-anchor decomposition says
+  cost ∝ CALLS ⇒ burst ~1.6-1.75× on gpt ⇒ gpt row 172-180 ⇒ **mean 116-120, PAST 112.**
+- **[ ] NEXT (the resolving experiment):** (1) lab-measure `_forge_plan_msg` on real gpt_oss — posts/cand +
+  CALLS/cand at K∈{4,7}, fire rate, per-hop token growth (no submission); (2) if posts≈K & fire ~100%, ONE
+  gpt-burst board submission at a replay-safe count (gemma held at blind-700) — its score resolves ∝calls
+  (mean ~118) vs ∝tokens (mean ~90) AND likely banks the biggest gain since v12. Clean trace → private-safe.
+  DECISIVE UNKNOWN: is board per-candidate cost ∝ model-CALLS or ∝ TOKENS-with-prefill?
 - [x] ~~**gpt_oss ceiling-bracket — SUBMITTED, PENDING.**~~ **RESULT: ALL THREE VOIDED (E5e, 2026-08-03).**
   `gpt-blind-1400/1700/2000` (55211036/38/39) all COMPLETE with **blank publicScore** = void. **gpt_oss
   blind headroom above validation-fill (~1200) is ~zero** — even 1400 (×1.17) overran the replay budget and
