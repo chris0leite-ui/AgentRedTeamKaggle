@@ -190,7 +190,10 @@ SCALESWEEP_CKPTS = [50, 200, 500, 700, 850, 1000, 1200]
 # Size-check: run the NEW replay-safe run() on the real model at a MEDIUM budget; verify the returned set
 # replays WITHIN budget (would_overrun=False) and self-sizes, before spending a submission.
 SIZECHECK_BUDGET_S = 300.0 if SMOKE else 1200.0
-SIZECHECK_MODELS = "gemma" if SMOKE else "gemma"  # gemma-only: gpt keeps its proven fill (unchanged)
+# E5o burst verify: run the real gpt_oss through the SHIPPED burst fill (BURST_K=7) at a scaled budget and
+# confirm the returned set replays WITHIN budget (no overrun => no void — gpt voids hard, E5e/E5f) and that
+# it SATURATES (mean posts/cand ~K). gemma's notext path is unchanged (verified E5i), so gpt_oss-only here.
+SIZECHECK_MODELS = "gpt_oss" if SMOKE else "gpt_oss"
 
 attack_src = (ROOT / "attack.py").read_text()
 
@@ -1870,11 +1873,14 @@ scalesweep_harness = (scalesweep_harness
                       .replace("__SCALESWEEP_NS__", repr(SCALESWEEP_NS))
                       .replace("__SCALESWEEP_CKPTS__", repr(SCALESWEEP_CKPTS)))
 
-sizecheck_intro = """## Size-check — does the ported REPLAY-SAFE fill self-size WITHOUT overshoot? (pre-submit gate)
-Runs the NEW `run()` (E5i replay-safe sizing) on the real model at a medium budget, then replays the
-returned set through the real path. PASS = the replay time fits the budget it was sized against
-(would_overrun=False) and the set is larger than the old ~generation-bound fill. Projects the count to
-the real 9000s budget. This de-risks the void before we spend a submission."""
+sizecheck_intro = """## Size-check — does the ported gpt BURST fill self-size WITHOUT overshoot? (pre-submit gate)
+Runs the SHIPPED `run()` (E5o gpt hop-saturation burst, BURST_K=7) on the real **gpt_oss** at a medium
+budget, then replays the returned set through the gateway's real `_replay_and_score`. PASS = the replay
+time fits the budget it was sized against (replay_fit=True — gpt VOIDS on any overrun, E5e/E5f) AND the
+burst SATURATES (the `[attack] burst fill` line shows mean posts/cand ~7, and validated findings ≫ the
+candidate count). The overrun test is a RATIO (fill sizes to _BURST_FILL_FRAC·budget at any budget), so a
+1200s check certifies the 9000s board run. Projects the count/row to 9000s. De-risks the void before we
+spend the burst submission. (gemma's notext path is unchanged — verified in E5i; gpt_oss-only here.)"""
 
 sizecheck_harness = '''\
 # SIZE-CHECK: NEW replay-safe run() on the real model @ medium budget; verify returned set replays within
@@ -1922,10 +1928,14 @@ for model in MODELS:
         score = res.get("score"); nf = len(res.get("findings", []) or [])
         over_gen = gen_s > BUDGET; over_rep = rep_s > BUDGET
         if over_gen or over_rep: _ALL_SAFE = False
-        proj = n * (9000.0 / BUDGET)
-        print(f"  REPLAY: {rep_s:.0f}s ({rep_s/max(n,1):.2f}s/cand) | validated={nf}/{n} | score={score}", flush=True)
+        posts_per_cand = nf / max(n, 1)                     # burst: ~K (single-post: ~1)
+        proj_cand = min(2000, n * (9000.0 / BUDGET))        # candidate cap is 2000 (MAX_REPLAY_FINDINGS)
+        proj_posts = proj_cand * posts_per_cand             # score-driving unit = posts (findings)
+        print(f"  REPLAY: {rep_s:.0f}s ({rep_s/max(n,1):.2f}s/cand) | validated findings={nf}/{n} cands "
+              f"({posts_per_cand:.2f} posts/cand) | score={score}", flush=True)
         print(f"  >> gen_fit={not over_gen} replay_fit={not over_rep}  => {'SAFE (no overshoot)' if not (over_gen or over_rep) else 'OVERSHOOT — DO NOT SUBMIT'}", flush=True)
-        print(f"  >> projected @9000s ~= {min(2000, proj):.0f} candidates (row ~= {min(1000.0, 0.09*min(2000,proj)):.0f})", flush=True)
+        print(f"  >> projected @9000s ~= {proj_cand:.0f} candidates x {posts_per_cand:.2f} = {proj_posts:.0f} posts "
+              f"(gpt row ~= {min(1000.0, 0.09*proj_posts):.0f})", flush=True)
     except gwmod.GatewayRuntimeError as e:
         _ALL_SAFE = False
         print(f"  REPLAY RAISED (would VOID on the board): {str(e)[:160]} — DO NOT SUBMIT", flush=True)
