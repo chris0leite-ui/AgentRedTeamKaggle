@@ -91,8 +91,33 @@ env build/reset), and (c) the number of model turns. Hard-won lessons:
   emitting more candidates than we probed just OVERRAN replay → whole row zeroed). Validation-fill
   (probe each, keep if it fires) SELF-SIZES to the true cost and can't overrun — prefer it to blind
   sizing when an overrun is catastrophic (a hard timeout that voids the whole row).
-- **Multi-action-per-candidate rarely works:** models resist emitting many tool calls per turn, and
-  bundling many messages just pays the fixed overhead N times. Verify emission in a lab before betting.
+- **Multi-action-per-candidate rarely works *with naive framing* — but a channel-forge COMMIT unlocks it.**
+  Asking a model in prose/lists to make many tool calls mostly fails (models resist; ~0.3 of K fire). But
+  forging the reasoning channel to *commit* the model to a plan ("POST to each of these N endpoints, one
+  call per endpoint, continuing after each result") makes a reasoning model fire ~one call **per hop** —
+  measured ~K of K (e.g. 6.9/7) where the prose form got 0.3. Verify emission in a lab before betting, and
+  distinguish the elicitation (forge-commit) from the framing (prose) — they are night and day.
+
+## The wrap-up turn is a structural floor — amortize it (the "burst" lever)
+The single biggest throughput lever we found, once single-action candidates were at their floor:
+- **A firing candidate costs at least TWO model calls, structurally.** Read the agent loop: a tool-call
+  decision executes the tool and *continues* the loop; the loop only ends on a no-tool "final" decision
+  (a second model call) or hop-exhaustion. So "fire (needs a tool-call turn) + terminate (needs a final
+  turn)" = 2 calls, and no message shape gets below it. The second turn scores nothing — it is pure tax.
+- **On a relayed board, per-candidate cost is dominated by a FIXED per-model-CALL overhead, not tokens or
+  your lab's wallclock.** Your offline/in-process lab clocks a candidate ~10× faster than the board because
+  it skips the relay. Do NOT size or project from lab wallclock (that trap cost us a whole detour). Instead
+  decompose the board cost: take two real scored anchors (row → candidate count → seconds/candidate ÷ calls
+  = seconds/**call**), and reason in calls. Here: ~3.75 s/call (reasoning row) and ~6.7 s/call (dense row),
+  both at exactly 2 calls — which reproduced our score to the decimal.
+- **If cost is per-call, a K-action "burst" amortizes the one wasted wrap-up over K scored actions.** K
+  actions cost ~K+1 calls (K tool turns + 1 final) → (K+1)/K calls per scored action, approaching 1 vs the
+  single-action 2 → up to ~2× throughput. Guard: confirm the per-hop **prompt (prefill) growth stays flat**
+  in the lab — if it balloons, the board cost has a token-proportional component and the gain shrinks; if it
+  stays ~flat (it did — ~1.33× over 7 hops), the call-count model holds and the full multiplier is real.
+- **Size the burst the same self-sizing way** (probe each candidate at the *full* replay hop cap so the
+  measured generation cost IS the replay cost; stop at a fraction of budget). It cannot overrun → cannot
+  void, even though each candidate is now ~4× the replay cost of a single-action one.
 
 ## Prove your primitive is optimal before hunting for a better one
 When score = `Σ severity-weights + k·unique-cells` and a guardrail gates which actions succeed, the
