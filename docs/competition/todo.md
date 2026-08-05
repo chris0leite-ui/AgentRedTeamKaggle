@@ -35,9 +35,9 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
   shape). Offline GREEN (7.00 posts/cand). Real-gpt `--sizecheck`: burst fill 170 cands @ **6.91 posts/cand**,
   REPLAY replay_fit=True → **SAFE, no void**; score 96.52@1200s ⇒ ~6.0 posts/cand scored. Void-safety
   transfers (gen≈replay both relay-inflated). **Board projection: gpt row ~148-171 → mean ~104-116.**
-- **[ ] NEXT — the burst submission (`attack-burst-v16`), HELD for go-ahead:** submit gpt→burst / gemma→notext;
-  read board vs the 104-116 projection. If safe with headroom, raise `_BURST_FILL_FRAC` 0.80→0.90. Re-confirm
-  route-survival (private-safe: K clean http.posts). gemma K=4 burst (1.33×, E5o) is a later additive lever.
+- [x] ~~**NEXT — the burst submission, HELD for go-ahead.**~~ **DONE → E5q: all 5 slots submitted as the
+  burst frontier map** (fill ladder 0.80/0.90/0.96 + gemma-burst + K=4), PENDING. After scores: pick the
+  production config (safe-fill edge, gemma gain, K trade); if headroom, raise `_BURST_FILL_FRAC` further.
 - [x] ~~**gpt_oss ceiling-bracket — SUBMITTED, PENDING.**~~ **RESULT: ALL THREE VOIDED (E5e, 2026-08-03).**
   `gpt-blind-1400/1700/2000` (55211036/38/39) all COMPLETE with **blank publicScore** = void. **gpt_oss
   blind headroom above validation-fill (~1200) is ~zero** — even 1400 (×1.17) overran the replay budget and
