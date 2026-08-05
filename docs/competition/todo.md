@@ -3,17 +3,22 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
-**CURRENT BEST: gemma-blind-700 = 84.285** (E5c, 2026-08-03) — +2.57 over v13. Arc: v12 forge 80.705 →
-v13 notext 81.720 → **gemma-blind-700 84.285**. **KEY FINDING: validation-fill was UNDERSIZING gemma —
-the relay gap is REAL.** Pushing gemma 589→700 (blind-fill) converted; ceiling ≈700 (row ~60.6), beyond
-it degrades gracefully (no void). gpt_oss held safe (~1200, row ~108) in all rungs.
+**CURRENT BEST: gemma-blind-700 = 84.285** (E5c, 2026-08-03) — the confirmed PUBLIC ceiling. Arc: v12 forge
+80.705 → v13 notext 81.720 → **gemma-blind-700 84.285**.
+- **E5l (2026-08-04) — THE FILL QUESTION IS SETTLED.** The probed-vs-blind A/B scored: **returning MORE than
+  ~700 gemma candidates ACTIVELY LOWERS the score** (N_eff *declines* 673→639→~480→~380 as N 700→2000 — it
+  does NOT plateau). **Probed replay-safe sizing ≈ blind and slightly worse at high N ⇒ SIZING IS NOT THE
+  LEVER; the E5i thesis is REFUTED.** The ~700 wall is the notext CANDIDATE on the board, not our fill — no
+  fill strategy moves it. The v15 replay-safe default I shipped self-sized to ~1000 and REGRESSED to 82.755.
+  ⇒ **Public gemma throughput is EXHAUSTED at ~700. Treat 84.285 as the public ceiling.**
 - [x] ~~**gpt_oss ceiling-bracket — SUBMITTED, PENDING.**~~ **RESULT: ALL THREE VOIDED (E5e, 2026-08-03).**
   `gpt-blind-1400/1700/2000` (55211036/38/39) all COMPLETE with **blank publicScore** = void. **gpt_oss
   blind headroom above validation-fill (~1200) is ~zero** — even 1400 (×1.17) overran the replay budget and
-  zeroed. Asymmetry: gemma overshoot degrades gracefully, gpt_oss overshoot VOIDS. E5d's "no void" assumption
-  refuted. **gpt_oss lever CLOSED; keep it on validation-fill. Best stays 84.285.**
-- [ ] **Bank 700 as the gemma default** in attack.py (GEMMA_BLIND_TARGET=700 or the auto-router sized to
-  the replay ceiling). Private-safe (identical clean trace). gpt_oss = validation-fill (NO blind target — E5e).
+  zeroed. Asymmetry: gemma overshoot DEGRADES (lower N_eff, E5l), gpt_oss overshoot VOIDS. **gpt_oss lever
+  CLOSED; keep it on validation-fill. Best stays 84.285.**
+- [ ] **Bank 700 as the gemma default** in attack.py (GEMMA_BLIND_TARGET=700, notext message) — REVERT the
+  v15 probed replay-safe default (82.755, overshoots to ~1000). Private-safe (identical clean trace). gpt_oss
+  = validation-fill (NO blind target — E5e). **This is the pending config change; awaiting go-ahead.**
 - [x] ~~**E5f: last 2 slots — gpt-blind-1250 + gemma-hardstop.**~~ **RESULTS (2026-08-03):** slot1
   `gpt-blind-1250` (55222012) **VOIDED** ⇒ gpt blind headroom = ZERO (even ×1.04 voids); validation-fill ~1200
   is the exact ceiling. tokprof lab: **hardstop ≡ notext ≡ plain** (gemma wrap-up already at the 5-token
