@@ -12,11 +12,11 @@ steps**. One entry per submission or notable local run.
 
   | slot | kernel (slug) | gpt row | gemma row | question | proj mean |
   |---|---|---|---|---|---|
-  | 1 | attack-burst-f0-8 | K=7 @ fill 0.80 | notext | anchor (sizecheck-proven safe) | ~104 |
-  | 2 | attack-burst-f0-9 | K=7 @ fill 0.90 | notext | the confident push | ~114 |
-  | 3 | attack-burst-f0-96 | K=7 @ fill 0.96 | notext | void-edge probe (finds the ceiling) | ~119 |
-  | 4 | attack-burst-f0-9-gb4 | K=7 @ 0.90 | **K=4 burst** | gemma additive lever (isolated vs slot 2) | ~124 |
-  | 5 | attack-burst-f0-9-k4 | **K=4** @ 0.90 | notext | burst WIDTH: K=4 vs K=7 (vs slot 2) | ~112 |
+  | 1 | attack-burst-f0-8 (ref 55278205) | K=7 @ fill 0.80 | notext | anchor (sizecheck-proven safe) | ~104 |
+  | 2 | attack-burst-f0-9 (ref 55278209) | K=7 @ fill 0.90 | notext | the confident push | ~114 |
+  | 3 | attack-burst-f096 (ref 55278319) | K=7 @ fill 0.96 | notext | void-edge probe (finds the ceiling) | ~119 |
+  | 4 | attack-burst-f09-gb4 (ref 55278355) | K=7 @ 0.90 | **K=4 burst** | gemma additive lever (isolated vs slot 2) | ~124 |
+  | 5 | attack-burst-f09-k4 (ref 55278321) | **K=4** @ 0.90 | notext | burst WIDTH: K=4 vs K=7 (vs slot 2) | ~112 |
 
 - **Design:** slots 1-2-3 = gpt fill ladder (the #1 score lever + #1 void risk); slot 4 isolates the gemma
   burst (E5o: gemma fires ~2 posts on the forge-plan message, 1.33×); slot 5 tests burst width. Tomorrow's

@@ -3,8 +3,12 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
-**CURRENT BEST: gemma-blind-700 = 84.285** (E5c, 2026-08-03) — the confirmed PUBLIC ceiling. Arc: v12 forge
-80.705 → v13 notext 81.720 → **gemma-blind-700 84.285**.
+**CURRENT BEST: gemma-blind-700 = 84.285** (E5c) — the single-post ceiling. **BURST is the lever past it.**
+- **E5q (2026-08-05) — ALL 5 SLOTS SUBMITTED: the burst frontier map, PENDING (~12h).** gpt hop-saturation
+  burst (E5o/E5p, verified SAFE + 6.91 posts/cand). Fill ladder 0.80/0.90/0.96 (slots 1-3, refs 55278205/
+  209/319), gemma-burst lever (slot 4, ref 55278355), K=4 width (slot 5, ref 55278321). Projected mean
+  ~104-124. **READ TOMORROW:** safe-fill edge (does 0.96 void?), gemma-burst gain (slot4−slot2), K trade
+  (slot5 vs slot2) → pick production config. Downside protected (LB keeps 84.285).
 - **E5m (2026-08-05) — THE BOARD LAW, AND THE GAP IS ONE MEASURABLE QUANTITY.** Fitting the 7 scored points
   gives **`gemma N_eff ≈ 818 − 0.207·N`**: replay budget ≈ 818 candidate-slots (⇒ **~11 s/gemma-cand**, = the
   VERIFIED C5 overhead), forced optimum `N* ≈ 678` (= the ~700 wall). **84.285 is the fixed point of an ~11 s
