@@ -98,6 +98,38 @@ def run_replaysafe_unit() -> bool:
     return ok
 
 
+def run_burst_unit() -> bool:
+    """Directly exercise the SHIPPED gpt BURST path (`_forge_plan_message` + `_probe_count` + `_burst_fill`)
+    against a hop-SATURATING mock, verifying it returns firing multi-post candidates, each firing BURST_K
+    posts, sized within bounds and without exception. eval_attack's obedient mock posts only once (routing
+    also ties to plain there), so without this the burst path that ships is only compile-checked, never run
+    (E5o port; code review: contract/correctness)."""
+    label = "burst unit (gpt burst path runs + saturates + sizes)"
+    try:
+        import attack as attack_mod
+        from aicomp_sdk.core.env.sandbox import SandboxEnv
+        from aicomp_sdk.guardrails.optimal import Guardrail as OptimalGuardrail
+        from aicomp_sdk.utils.timebox import Timebox
+        from mock_agent import BurstMockAgent
+        algo = AttackAlgorithm()
+        env = SandboxEnv(seed=123, fixtures_dir=FIXTURES,
+                         agent=BurstMockAgent(latency_s=0.02), guardrail=OptimalGuardrail())
+        env.reset()
+        budget_s = 12.0
+        tb = Timebox(budget_s)
+        domains = algo._unique_domains()
+        out = algo._burst_fill(env, domains, tb, budget_s, 8, [])
+        # Re-probe the first returned candidate on the saturating mock: it must fire exactly BURST_K posts.
+        n_posts = algo._probe_count(env, list(out[0].user_messages), 8) if out else 0
+    except Exception as e:  # noqa: BLE001
+        print(f"[FAIL] {label}: raised {type(e).__name__}: {e}")
+        return False
+    ok = (isinstance(out, list) and 1 <= len(out) <= 2000 and n_posts == attack_mod.BURST_K)
+    print(f"[{'PASS' if ok else 'FAIL'}] {label}: returned={len(out)} posts/cand={n_posts} "
+          f"(K={attack_mod.BURST_K})")
+    return ok
+
+
 def main() -> int:
     ok = True
     # 1) Real packaged agent: must RUN cleanly (findings may be 0 — that's fine).
@@ -114,6 +146,8 @@ def main() -> int:
                    budget_s=20.0, expect_fire=True)
     # 3) Directly run the SHIPPED gemma replay-safe branch (routing can hide it from case 2).
     ok &= run_replaysafe_unit()
+    # 4) Directly run the SHIPPED gpt BURST branch (routing ties to plain on the uniform mock, hiding it).
+    ok &= run_burst_unit()
     print("\nPRE-SUBMISSION GATE:", "GREEN — safe to submit" if ok else "RED — fix before submit")
     return 0 if ok else 1
 

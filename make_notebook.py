@@ -18,10 +18,10 @@ OUT.mkdir(exist_ok=True)
 
 KAGGLE_USERNAME = "chrisleitescha"  # kernel owner (lowercased Kaggle handle)
 COMP = "ai-agent-security-multi-step-tool-attacks"
-SLUG = "attack-replaysafe-v15"  # E5i: gemma replay-safe sizing (cap 1000), gpt unchanged
-# gemma replay headroom (relay gap). gpt_oss unchanged/safe. ONE_HOP_GEMMA_FILL=True in attack.py.
+SLUG = "attack-burst-v16"  # E5o: gpt hop-saturation BURST (K=7, ~1.5-1.75x); gemma unchanged (notext-700)
+# gpt row → _burst_fill (BURST_K=7 in attack.py, replay-safe-sized at 8-hop probe). gemma → notext.
 # Kaggle derives the slug from the TITLE, so keep the title slug-clean and matching SLUG.
-TITLE = "Attack replaysafe v15"
+TITLE = "Attack burst v16"
 
 attack_src = (ROOT / "attack.py").read_text()
 
