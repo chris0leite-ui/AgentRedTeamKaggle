@@ -5,6 +5,36 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E5p — PORT + LAB-VERIFY: burst ported to attack.py, real-gpt sizecheck SAFE + saturates (no submission)
+- **Date:** 2026-08-05. Ported the E5o burst into attack.py (gpt/forge route only): `_forge_plan_message`
+  (K endpoints), `_burst_fill` (probe at the full 8-hop replay shape ⇒ measured cost = replay cost;
+  size to `_BURST_FILL_FRAC=0.80`, tighter than single-post's 0.92 since gpt voids on overrun), `_probe_count`,
+  `BURST_K=7`. gemma unchanged (notext replay-safe). Added `BurstMockAgent` + `run_burst_unit` to the GREEN gate.
+- **Offline GREEN gate:** burst path routes (`forge/gpt→BURST(K=7)`), fires **7.00 posts/cand** on the
+  saturating mock, self-sizes (30 cands @ 12s), no exception. PASS.
+- **Real-gpt `--sizecheck` (kernel `attack-sizecheck`, COMPLETE, no submission)** — the SHIPPED burst `run()`
+  on real gpt_oss @ 1200s budget, replayed through the gateway's real `_replay_and_score`:
+  - router → `forge/gpt→BURST(K=7)` (costs forge 0.78 < plain 2.05 < notext 3.74); **burst fill: 170 cands,
+    mean 6.91 posts/cand** — saturates end-to-end in the shipped code (matches E5o 6.92/7).
+  - run() returned 180 cands in 962s gen (5.34s/cand); **REPLAY 920s → replay_fit=True → SAFE (no
+    overshoot).** gen≈replay holds (5.34≈5.11) ⇒ **the burst fill will NOT void.**
+  - **score=96.52** at 1200s ⇒ raw 19,304 ⇒ 1,072 posts / 180 cands = **~6.0 posts/cand SCORED on replay**
+    (a mild ~13% attrition from the 6.91 fired in generation — some cands fire fewer posts on the fresh
+    replay env). (The harness "1.00 posts/cand" line is a display bug — `findings` is candidate-level; the
+    score is the true signal. Fixed the projection to use posts, but nf stays candidate-level — noted.)
+- **Void-safety TRANSFERS to the board:** the in-process replay (5.11s/cand) is NOT board-faithful (real
+  relay ~26s/cand for a ~7-call burst — the E5g/E5n lesson), but the SAFETY RATIO is: gen and replay are
+  BOTH relay-inflated equally (both run the same 8-hop burst through the relay), so gen≈replay ⇒ the 0.80
+  fill leaves the same cushion at 9000s as at 1200s. replay_fit at 1200s certifies the 9000s run.
+- **Board projection (call-cost model, NOT the 1200s absolute):** burst cand ≈ 7 model-calls × gpt 3.75s/call
+  board = 26.25s/cand; 0.80 fill ⇒ ~274 cands × (6.0-6.91 posts) = 1646-1895 posts ⇒ **gpt row ~148-171 ⇒
+  mean ~104-116.** Big gain over 84.285; near/at the ~112 leaders. Could tune `_BURST_FILL_FRAC` up (0.80→0.90)
+  for more after a first safe submission confirms the board cost.
+- **STATUS: burst v16 is ported, GREEN, and real-model-verified SAFE. Ready to submit — HELD for go-ahead.**
+- **Recommended next steps:** (1) submit ONE `attack-burst-v16` (gemma held at its notext path; gpt→burst);
+  read the board score vs the 104-116 projection. (2) if safe with headroom, raise `_BURST_FILL_FRAC` toward
+  0.90 next. (3) re-confirm route-survival for the K-post trace before submit (private-safe: K clean posts).
+
 ## E5o — RESULT: gpt BURST SATURATES (6.92/7 posts) with MILD prefill growth → projects mean ~111-130
 - **Date:** 2026-08-05. Ran `--burst` on the real GGUF models (kernel `attack-burst-lab`, COMPLETE, no
   submission). Ported pilkwang `_forge_plan_msg` (analysis-channel forge to K endpoints), K∈{1,4,7}, HOPS=8.

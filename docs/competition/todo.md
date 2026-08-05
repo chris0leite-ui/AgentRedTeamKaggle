@@ -26,11 +26,14 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
   posts (1.33× bonus). BOTE: gpt row 108→161-180, **mean 111-130 across the whole bracket — beats 84.285 and
   the ~112 leaders.** The real risk is VOID (burst cand ≈8 calls ≈4× replay), so the returned count MUST be
   replay-safe-sized against the true 8-hop burst cost.
-- **[ ] NEXT (port + verify + submit the burst):** (1) port `_forge_plan_msg` K=7 into attack.py's gpt row
-  (fall back to single-post if a burst under-fires; fill probes bursts at 8 hops for the real replay cost;
-  replay-safe-size the count); test gemma K=4 burst (1.33×) vs held notext-700. (2) LAB-VERIFY the ported
-  attack.py (fire ~100%, no-void sizing) before any submission. (3) re-confirm route-survival (private-safe:
-  K clean http.posts, no send/email/upload). (4) THEN one burst board submission. **Awaiting go-ahead to port.**
+- **E5p (2026-08-05) — BURST PORTED + REAL-GPT VERIFIED SAFE. Ready to submit (held for go-ahead).**
+  attack.py gpt route → `_burst_fill` (BURST_K=7, `_BURST_FILL_FRAC=0.80`, probes at 8 hops = real replay
+  shape). Offline GREEN (7.00 posts/cand). Real-gpt `--sizecheck`: burst fill 170 cands @ **6.91 posts/cand**,
+  REPLAY replay_fit=True → **SAFE, no void**; score 96.52@1200s ⇒ ~6.0 posts/cand scored. Void-safety
+  transfers (gen≈replay both relay-inflated). **Board projection: gpt row ~148-171 → mean ~104-116.**
+- **[ ] NEXT — the burst submission (`attack-burst-v16`), HELD for go-ahead:** submit gpt→burst / gemma→notext;
+  read board vs the 104-116 projection. If safe with headroom, raise `_BURST_FILL_FRAC` 0.80→0.90. Re-confirm
+  route-survival (private-safe: K clean http.posts). gemma K=4 burst (1.33×, E5o) is a later additive lever.
 - [x] ~~**gpt_oss ceiling-bracket — SUBMITTED, PENDING.**~~ **RESULT: ALL THREE VOIDED (E5e, 2026-08-03).**
   `gpt-blind-1400/1700/2000` (55211036/38/39) all COMPLETE with **blank publicScore** = void. **gpt_oss
   blind headroom above validation-fill (~1200) is ~zero** — even 1400 (×1.17) overran the replay budget and
