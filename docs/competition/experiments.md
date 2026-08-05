@@ -5,6 +5,28 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E5q — SUBMITTED: the 5-slot burst frontier map (fill ladder + gemma lever + K width)
+- **Date:** 2026-08-05. Spent all 5 daily slots to BRACKET the burst frontier in one shot (12h latency, no
+  intraday adaptation; downside protected — LB keeps the standing 84.285). The sizecheck (E5p) already
+  proved burst SCORES (~6 posts/cand) and SELF-SIZES safe, so the slots map the unknowns, not re-confirm.
+
+  | slot | kernel (slug) | gpt row | gemma row | question | proj mean |
+  |---|---|---|---|---|---|
+  | 1 | attack-burst-f0-8 | K=7 @ fill 0.80 | notext | anchor (sizecheck-proven safe) | ~104 |
+  | 2 | attack-burst-f0-9 | K=7 @ fill 0.90 | notext | the confident push | ~114 |
+  | 3 | attack-burst-f0-96 | K=7 @ fill 0.96 | notext | void-edge probe (finds the ceiling) | ~119 |
+  | 4 | attack-burst-f0-9-gb4 | K=7 @ 0.90 | **K=4 burst** | gemma additive lever (isolated vs slot 2) | ~124 |
+  | 5 | attack-burst-f0-9-k4 | **K=4** @ 0.90 | notext | burst WIDTH: K=4 vs K=7 (vs slot 2) | ~112 |
+
+- **Design:** slots 1-2-3 = gpt fill ladder (the #1 score lever + #1 void risk); slot 4 isolates the gemma
+  burst (E5o: gemma fires ~2 posts on the forge-plan message, 1.33×); slot 5 tests burst width. Tomorrow's
+  read: the safe-fill edge (does 0.96 void?), the gemma gain (slot4−slot2), the K trade (slot5 vs slot2).
+- **Safety:** every slot uses the self-sizing `_burst_fill` (probe at full hops ⇒ gen≈replay ⇒ cannot
+  overrun); gpt sizecheck (E5p) SAFE at 0.80, and the replay/gen ratio (0.96) predicts 0.90 safe / 0.96 near
+  the edge (intended). gemma burst uses the SAME self-sizing mechanism (model-agnostic) — void-safe by the
+  construction the gpt sizecheck validated. All 5 passed the offline GREEN gate.
+- **RESULTS: PENDING** (server rerun ~12h). Read tomorrow; pick production config from the frontier map.
+
 ## E5p — PORT + LAB-VERIFY: burst ported to attack.py, real-gpt sizecheck SAFE + saturates (no submission)
 - **Date:** 2026-08-05. Ported the E5o burst into attack.py (gpt/forge route only): `_forge_plan_message`
   (K endpoints), `_burst_fill` (probe at the full 8-hop replay shape ⇒ measured cost = replay cost;

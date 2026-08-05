@@ -77,7 +77,9 @@ if _burstfill:
     assert "_BURST_FILL_FRAC = 0.80" in attack_src, "expected _BURST_FILL_FRAC=0.80 default to patch"
     attack_src = attack_src.replace("_BURST_FILL_FRAC = 0.80", f"_BURST_FILL_FRAC = {_bf}", 1)
     SLUG = f"attack-burst-f{str(_bf).replace('.', '')}"
-    TITLE = f"Attack burst f{_bf}"
+    # Title MUST slugify to SLUG (Kaggle derives the slug from the title) — keep it period-free, or the
+    # title-slug (f0-96) diverges from the id (f096) and the push 409-conflicts.
+    TITLE = f"Attack burst f{str(_bf).replace('.', '')}"
 
 # `--burstk=K` (E5p) sets the gpt BURST width (BURST_K, default 7 = posts/candidate ceiling under the 8-hop
 # replay cap). K=4 is a cheaper/less-attrition candidate; compares burst width at a matched fill. Combine
