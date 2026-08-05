@@ -56,6 +56,40 @@ steps**. One entry per submission or notable local run.
   loop breaks early on a final answer [sandbox.py:236]; our candidate exits after 2 hops, so replay ≠ 8×.)
   The `--gateway` lab (E5g) settles it by direct measurement.
 
+### E5l — RESULT: probed-vs-blind A/B scored → FILL IS NOT THE LEVER; ~700 is the CANDIDATE ceiling
+- **Date:** 2026-08-04. All 5 of E5j/E5k scored. Matrix (gemma N_eff inferred, gpt≈108):
+
+  | config | N | public | gemma_row | N_eff |
+  |---|---|---|---|---|
+  | **blind-700 (banked best)** | 700 | **84.285** | 60.6 | ~673 |
+  | v15 PROBED replay-safe cap 1000 | 1000 | 82.755 | 57.5 | ~639 |
+  | blind-1000 (E5c) | 1000 | 82.080 | 56.2 | ~624 |
+  | PROBED rscap 1400 | 1400 | 74.385 | 40.8 | ~453 |
+  | BLIND 1400 | 1400 | 76.815 | 45.6 | ~507 |
+  | PROBED rscap 2000 | 2000 | 69.570 | 31.1 | ~346 |
+  | BLIND 2000 | 2000 | 72.585 | 37.2 | ~413 |
+
+- **Learnings:**
+  1. **Returning more gemma candidates ACTIVELY HURTS — N_eff *declines*, not plateaus** (673→639→~480→~380
+     as N 700→2000). The board penalizes a bloated return set; the optimum is to return EXACTLY ~700.
+  2. **PROBED (replay-safe) ≈ BLIND, and slightly WORSE at high N** (1400: 74.4 vs 76.8; 2000: 69.6 vs 72.6).
+     **⇒ validation/replay-safe SIZING IS NOT THE LEVER. The E5i thesis ("the gap to the field is that we
+     lack replay-safe sizing") is REFUTED.** The ported machinery does not beat a dumb fixed emit.
+  3. **The ~700 gemma ceiling is the notext CANDIDATE on the board, not our fill** — both mechanisms peak at
+     ~700 and degrade identically above it. No fill strategy moves it. The field's ~1244 must use a
+     genuinely cheaper-per-board-replay candidate we do not have (notext is it; hardstop worse; token-floor).
+  4. **v15 (the replay-safe default I shipped) = 82.755 < blind-700 84.285 — a mild REGRESSION** (it
+     self-sized to ~1000, overshooting the ~700 optimum). Confirms the E5h mystery is real+strong: the fill's
+     offline cost model says ~1000+ fit; the board scores ~700 and falls off a cliff above it.
+  - Routing confirmed working: the rscap CAP changed the score (74.4@1400 vs 69.6@2000) ⇒ gemma did route to
+    the replay-safe path (resolves the code-review caveat empirically).
+- **DECISIONS:**
+  - **BANK blind-700 (84.285) as the default** (GEMMA_BLIND_TARGET=700 with the notext message, or cap the
+    replay-safe fill ≤700). Revert the v15 replay-safe default (82.755). gpt = validation-fill (~108).
+  - **Public gemma throughput is EXHAUSTED at ~700 via any fill.** The only untested public lever is a
+    cheaper gemma REPLAY candidate — likely a dead end (token-floor). Treat 84.285 as the public ceiling.
+  - **Weight shifts to the PRIVATE board** (final ranking) — E-P1 done; E-P2 (real-model read-then-send) next.
+
 ### E5k — SUBMITTED: probed-vs-blind gemma ceiling A/B (4 slots, all PENDING)
 - **Date:** 2026-08-04. Spent the day's remaining 4 slots on a controlled A/B to answer the central open
   question (does the PROBED replay-safe fill beat the BLIND mechanism on the board, or is notext
