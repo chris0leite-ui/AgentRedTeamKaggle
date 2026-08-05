@@ -90,6 +90,17 @@ if _burstk:
     SLUG = f"{SLUG}-k{_burstk}" if (_burstfill) else f"attack-burst-k{_burstk}"
     TITLE = f"{TITLE} k{_burstk}" if (_burstfill) else f"Attack burst k{_burstk}"
 
+# `--gemmaburst=K` (E5p slot-4) arms the gemma BURST probe: gemma routes to the self-sizing burst fill at
+# width K (~2 posts/cand, 1.33× vs notext — E5o) instead of notext-single. Combine with --burstfill/--burstk
+# (those patch the gpt row); slug stays distinct. gemma burst self-sizes (full-hop probe) ⇒ no void.
+_gemmaburst = next((int(a.split("=", 1)[1]) for a in sys.argv[1:] if a.startswith("--gemmaburst=")), 0)
+if _gemmaburst:
+    assert 2 <= _gemmaburst <= 7, f"--gemmaburst out of range: {_gemmaburst}"
+    assert "GEMMA_BURST_K = 0" in attack_src, "expected GEMMA_BURST_K=0 default to patch"
+    attack_src = attack_src.replace("GEMMA_BURST_K = 0", f"GEMMA_BURST_K = {_gemmaburst}", 1)
+    SLUG = f"{SLUG}-gb{_gemmaburst}" if (_burstfill or _burstk) else f"attack-burst-gb{_gemmaburst}"
+    TITLE = f"{TITLE} gb{_gemmaburst}" if (_burstfill or _burstk) else f"Attack burst gb{_gemmaburst}"
+
 # Accidental-activation guard: a DEFAULT submission (no bracket flag) must ship the committed 0/safe blind
 # targets. A stale non-zero *_BLIND_TARGET would silently bypass replay-safe sizing and can VOID a row
 # (E5e: gpt voids beyond ~1250). Refuse to ship a blind-armed default. (Uniqueness assert on the patched
