@@ -20,11 +20,17 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
   (pilkwang `_forge_plan_msg`, 4.0 posts/cand — we'd refuted a weaker prose form in E4p/E4k). pilkwang parked
   it at ~1.1× on a LAB that (like E5g) isn't faithful to board per-CALL cost; our 2-anchor decomposition says
   cost ∝ CALLS ⇒ burst ~1.6-1.75× on gpt ⇒ gpt row 172-180 ⇒ **mean 116-120, PAST 112.**
-- **[ ] NEXT (the resolving experiment):** (1) lab-measure `_forge_plan_msg` on real gpt_oss — posts/cand +
-  CALLS/cand at K∈{4,7}, fire rate, per-hop token growth (no submission); (2) if posts≈K & fire ~100%, ONE
-  gpt-burst board submission at a replay-safe count (gemma held at blind-700) — its score resolves ∝calls
-  (mean ~118) vs ∝tokens (mean ~90) AND likely banks the biggest gain since v12. Clean trace → private-safe.
-  DECISIVE UNKNOWN: is board per-candidate cost ∝ model-CALLS or ∝ TOKENS-with-prefill?
+- **E5o (2026-08-05) — BURST LAB RESULT: gpt SATURATES, projects mean ~111-130.** Ran `--burst` on real
+  GGUF: gpt fires **6.92/7 posts** at K=7 (4.0/4 at K=4), calls=K+1, **prefill grows only 1.33×** ⇒ board
+  multiplier ~1.5-1.75× (∝calls-vs-∝tokens no longer binds — prefill didn't balloon). gemma bursts to 2
+  posts (1.33× bonus). BOTE: gpt row 108→161-180, **mean 111-130 across the whole bracket — beats 84.285 and
+  the ~112 leaders.** The real risk is VOID (burst cand ≈8 calls ≈4× replay), so the returned count MUST be
+  replay-safe-sized against the true 8-hop burst cost.
+- **[ ] NEXT (port + verify + submit the burst):** (1) port `_forge_plan_msg` K=7 into attack.py's gpt row
+  (fall back to single-post if a burst under-fires; fill probes bursts at 8 hops for the real replay cost;
+  replay-safe-size the count); test gemma K=4 burst (1.33×) vs held notext-700. (2) LAB-VERIFY the ported
+  attack.py (fire ~100%, no-void sizing) before any submission. (3) re-confirm route-survival (private-safe:
+  K clean http.posts, no send/email/upload). (4) THEN one burst board submission. **Awaiting go-ahead to port.**
 - [x] ~~**gpt_oss ceiling-bracket — SUBMITTED, PENDING.**~~ **RESULT: ALL THREE VOIDED (E5e, 2026-08-03).**
   `gpt-blind-1400/1700/2000` (55211036/38/39) all COMPLETE with **blank publicScore** = void. **gpt_oss
   blind headroom above validation-fill (~1200) is ~zero** — even 1400 (×1.17) overran the replay budget and
