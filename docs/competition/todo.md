@@ -12,8 +12,13 @@ and what do the leaders do that we don't?**
   (1) they fill replay to **0.95–0.99**, we fill 0.80–0.92; (2) the board is a **±5 lottery they RE-ROLL**
   (board keeps best), we read single noisy runs as deterministic "refutations"; (3) their multipost ==
   our burst (`SLOW_MULTIPOST_N=4 → 90.090`); (4) our gpt sizes to the GEN clock, not replay-safe.
-  **NEXT (held for go-ahead):** replay-safe-size BOTH rows at FRAC≈0.97 (COEF=1.0), then re-roll. See E6.
-  **DONE this session:** reverted the shipped default to the banked best (GEMMA_BLIND_TARGET 0→700).
+  **DONE this session:** reverted default to banked best (GEMMA_BLIND_TARGET 0→700); added GPT_REPLAY_SAFE
+  knob (6a262f6); **submitted the E7 5-slot bracket** (2 single-post replay-safe 0.96/0.99 + gpt multipost
+  K4/K4/K7 fill 0.97/0.99/0.97; refs 55305206/09/238/239/257, all PENDING).
+- **[ ] NEXT SESSION — read E7 scores (~12h) and re-roll the winner:** (a) did any multipost slot beat
+  84.285? K=7 vs K=4 resolves per-hop cost inflation (E5q's 2× vs nctuan's 1.33×); (b) did gpt-replay-safe
+  0.99 void or score? (c) then PURE RE-ROLL of the winning config (board keeps best, ±5 variance — E6),
+  pushing K/fill toward the 112 leaders if multipost converts. See E7.
 - **E5q RESULT (2026-08-06) — burst refuted (a fact, not a wall).** All 5 burst slots scored BELOW 84.285
   (best slot2 K=7@0.90 = 79.295). gpt burst row ~98 < single-post 108; gemma burst ~49 < notext 61. WHY: the
   relayed board's later burst hops cost ~2× the first (not the lab's 1.33×), inverting the wrap-up

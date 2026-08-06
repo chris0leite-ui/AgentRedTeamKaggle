@@ -5,6 +5,42 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E7 — SUBMITTED: the 5-slot aggressive-fill + multipost bracket (first real test of the E6 findings)
+- **Date:** 2026-08-06. Spent all 5 daily slots on the E6 thesis: the leaders fill replay to 0.95–0.99
+  and the gpt MULTIPOST row (→~150+) carries the mean to ~112, while gemma is floored (~60, E5m). Our
+  84.285 is banked, so the whole bracket is downside-free. New code: `GPT_REPLAY_SAFE` (route the gpt
+  single-post row through the board-proven `_replay_safe_fill` instead of the gen-clock — commit 6a262f6).
+  All 5 offline-GREEN (replay-safe + burst fill paths run non-empty) and COMPLETE + SELF-TEST OK on Kaggle.
+
+  | slot | ref | gpt row | gemma row | fill | question | proj |
+  |---|---|---|---|---|---|---|
+  | 1 | 55305206 | single-post replay-safe | single-post replay-safe | 0.96 | does the gpt-replay-safe fix beat 84.285? | ~86–95 |
+  | 2 | 55305209 | single-post replay-safe | single-post replay-safe | 0.99 | void-edge of the fix (safe or void?) | ~88–100 / void |
+  | 3 | 55305238 | **multipost K=4** | single-post | 0.97 | nctuan-90 config, done at proper fill | ~95–112 |
+  | 4 | 55305239 | multipost K=4 | single-post | 0.99 | max-fill lottery on the sweet spot | ~100–116 / void |
+  | 5 | 55305257 | multipost K=7 | single-post | 0.97 | max-posts; resolves per-hop cost inflation | ~95–116 |
+
+- **Per-kernel overrides (reproducible):** COMMON = {GEMMA_BLIND_TARGET=0, _GEMMA_REPLAY_CAP=2000,
+  _REPLAY_COEF_SAFETY=1.0}. s1/s2 add {GPT_REPLAY_SAFE=True, BURST_K=1, REPLAY_SAFE_FRAC=0.96/0.99}. s3/s4/s5
+  add {BURST_K=4/4/7, _BURST_FILL_FRAC=0.97/0.99/0.97, REPLAY_SAFE_FRAC=0.97/0.99/0.97}. Builder:
+  scratchpad/build_slots.py (gitignored scratch_sub/ outputs).
+- **Why this differs from E5q (burst refuted 73–79):** E5q filled burst to **0.80** on a single roll and read
+  it as deterministic law. E7 fills **0.97–0.99** (the leaders' setting) and BRACKETS K∈{4,7} to actually
+  measure the per-hop cost curve — E5q said later hops cost ~2× (kills amortization), nctuan's lab said 1.33×
+  (multipost → row ~150). This bracket resolves which is true ON THE BOARD.
+- **Read tomorrow (~12h server rerun; board keeps BEST, so no downside):**
+  1. **s1 vs s2:** does gpt-replay-safe sizing hold at 0.99 or void? Does either single-post config beat
+     84.285? (If s1 ≈ 84 and s2 voids → gemma floored + gpt at edge, confirmed; SP lever exhausted.)
+  2. **s3/s4/s5 = the real test.** If any multipost slot > 84.285, the K-multipost lever WORKS at proper
+     fill (E5q's refutation was a fill/variance artifact). **s5(K=7) vs s3(K=4):** K=7 higher ⇒ per-hop
+     inflation is LOW (nctuan right) ⇒ push K + fill tomorrow toward the 112 leaders; K=7 lower/void ⇒
+     inflation HIGH (E5q right) ⇒ K=4 is the multipost sweet spot. **s4 vs s3:** 0.99 vs 0.97 void-edge.
+  3. **Variance:** these are SINGLE rolls of a ±5 board (E6). Tomorrow = pure RE-ROLL of today's winner
+     (the leaders' method), not new configs — unless multipost is flatly refuted at proper fill.
+- **STATUS: all 5 PENDING.** Banked best unchanged at 84.285 until a slot scores above it.
+
+---
+
 ## E6 — LEADER-KERNEL PULL: the 84→112 gap is fill-fraction + re-roll variance, not a missing primitive
 - **Date:** 2026-08-06. Pulled the live leaderboard + 7 top public kernel sources via the Kaggle API
   (kept under the gitignored `refs/`). Directive: find what the ~112 leaders do that we don't.
