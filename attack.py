@@ -106,6 +106,13 @@ _SLOWEST_MULT = 1.35           # per-candidate cushion applied to the slowest ob
 _REPLAY_COEF_SAFETY = 1.20     # extra safety on the measured 1-hop→replay ratio (anti-overshoot)
 _REPLAY_COEF_FALLBACK = 2.2    # coef used if the 1-hop ratio cannot be calibrated
 _LAT_FLOOR_S = 1e-3
+# E6 (2026-08-06): the top public kernels (dimong4/nctuan/tetsutani) apply REPLAY_SAFE_SIZING to BOTH
+# rows at FRAC 0.95-0.99; our gpt row still sizes to the GENERATION clock (_BUDGET_FILL_FRAC), trusting
+# gen≈replay — the exact assumption that voids gpt near its replay edge (E5e/E5f). When True (armed per
+# kernel by make_notebook), route the gpt/forge single-post row (BURST_K==1) through the same measured
+# _replay_safe_fill as gemma, so it sizes to the real replay budget instead of the gen clock. Default
+# False preserves the proven gen-clock path. Multipost (BURST_K>1) keeps its own _burst_fill sizing.
+GPT_REPLAY_SAFE = False
 
 # --- DENSITY (E3o) ---------------------------------------------------------------
 # Each candidate is a CHAIN of K proven single-post messages. eval_predicates fires one
@@ -354,6 +361,15 @@ class AttackAlgorithm(AttackAlgorithmBase):
         # and size to _BURST_FILL_FRAC (gpt voids on overrun). Only when the router picked forge ⇒ gpt_oss.
         if is_gpt and BURST_K > 1:
             return self._burst_fill(env, domains, tb, budget_s, max_hops, findings)
+
+        # E6: gpt single-post via REPLAY-SAFE sizing (the leaders' both-rows design). Reuses the same
+        # measured 1-hop-probe + coef fill as gemma so the gpt set sizes to the real replay budget
+        # (REPLAY_SAFE_FRAC) rather than the generation clock — removing the gen≈replay assumption that
+        # voids gpt near its edge. Only when the router picked forge (⇒ gpt_oss) and BURST_K==1.
+        if REPLAY_SAFE_SIZING and GPT_REPLAY_SAFE and is_gpt and BURST_K == 1:
+            probe_hops, replay_coef = self._calib_replay_coef(env, make, domains, tb, budget_s, best_cost)
+            return self._replay_safe_fill(env, make, domains, tb, budget_s, probe_hops,
+                                          replay_coef, findings, slowest0=best_cost)
 
         # gpt_oss / plain: proven generation-clock validation-fill (self-sizes to its 8-hop probe cost).
         fill_hops = max_hops
