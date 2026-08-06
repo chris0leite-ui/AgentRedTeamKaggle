@@ -170,15 +170,16 @@ and what do the leaders do that we don't?**
   offline; proved dense replay is valid (failure was scale). Reusable tool.
 
 ## Reality anchors (real-board, measured)
-- **Best real score: v12 forge = 80.705** (E4t). Arc: v2 29.34 · v5 single-post terse 36.81 · v6 lean
-  52.775 · **v12 per-model Harmony-forge 80.705**. gpt_oss ~108 (forge, ~1200 cand) + gemma ~53 (plain).
+- **Best real score: gemma-blind-700 = 84.285** (E5c). Arc: v2 29.34 · v5 single-post terse 36.81 · v6 lean
+  52.775 · v12 forge 80.705 · v13 notext 81.720 · **84.285**. gpt_oss ~108 (forge, ~1200 cand) + gemma ~60.6 (notext).
 - **Dense-multi = DEAD END (E4i):** v3/v4/v7/v8/v9 all overran/zeroed; it's K single-posts bundled at
   2 turns/post (no gain) with real overhead ~8×. Ship single-post.
 - **Fire rate ~100%, deterministic** (greedy) — E3s. The wall is THROUGHPUT (seconds-per-post).
 - **Throughput plateau BROKEN (E4t):** the Harmony analysis-forge cut gpt_oss's per-candidate reasoning
-  ~2× → v12 = 80.705 (above the ~60 field cluster). Multi-post levers (dense E4i, list E4k) stay refuted.
-  Practical ceiling now ~84 (gemma-bound + fixed per-candidate overhead). The remaining axis is the
-  PRIVATE guardrail (robustness of the forge, untestable until end) — the real ranking lever.
+  ~2× → v12 = 80.705, later 84.285. Dense (E4i) / list (E4k) multipost refuted AT 0.80 FILL — but E6 shows
+  the leaders' gpt multipost works at 0.95–0.99 fill (nctuan K=4 → 90.090); E7 re-tests it. **NOT a ~84
+  ceiling** (E6: same primitive as the 104–116 leaders; the deltas are aggressive fill + re-roll variance +
+  gpt multipost). The PRIVATE guardrail (robustness, untestable until end) remains the final ranking axis.
 
 ## Next
 - [ ] **Profile per-turn token/latency in the offline scorer** (Q3): record llama.cpp `t_eval_ms` +

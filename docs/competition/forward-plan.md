@@ -2,7 +2,7 @@
 
 > ⚠️ **SUPERSEDED IN PART (E4i, 2026-07-30).** The "density lever" thesis below is **REFUTED on the real
 > board**: dense-multi = K single-posts bundled at 2 turns/post (no efficiency gain), real overhead ~8×,
-> and it overran (v3/v4/v7/v8/v9 all zeroed). Best real (UPDATED E4t) = **v12 per-model Harmony-forge 80.705**; was v5 single-post terse 36.81 when this doc was written. The
+> and it overran (v3/v4/v7/v8/v9 all zeroed). Best real (UPDATED E5c) = **gemma-blind-700 84.285** (v12 forge 80.705 → v13 notext 81.720 → 84.285); was v5 single-post terse 36.81 when this doc was written. E6/E7 (2026-08-06): the ~112 leaders use our SAME primitive with aggressive replay-fill (0.95–0.99) + re-roll + gpt multipost — see `experiments.md`. The
 > only remaining throughput lever toward ~110 is the **LIST form** (one message → K posts across the 8
 > hops → ~1.14 turns/post) — see **`listform-lab-plan.md`**. The SDK facts and constraint analysis below
 > are still valid; the density economics/projection (mean ~335, "2×") were a lab artifact. CoT

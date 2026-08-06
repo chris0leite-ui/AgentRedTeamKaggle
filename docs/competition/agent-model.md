@@ -2,7 +2,7 @@
 
 Diagrams that render on GitHub and in the side panel. This is the picture companion to the
 plain-English write-up in `how-it-works.md`; the numbers are in `reference.md`, the words in
-`../glossary.md`, the code in `../../attack.py`. **Current best: v12 = 80.705** (per-model
+`../glossary.md`, the code in `../../attack.py`. **Current best: gemma-blind-700 = 84.285** (per-model
 reasoning-forge; see `experiments.md` E4t).
 
 ## 1. The agent we're attacking (the loop)
@@ -94,7 +94,7 @@ flowchart LR
   SPC["seconds / attempt<br/>(lower = better)"] --> N["attempts that fit the<br/>~2.5 h replay budget"]
   N --> ROW["one assistant's score<br/>= 0.09 × attempts (cap 2000)"]
   ROW --> MEAN["public score =<br/>mean(gpt_oss, gemma)"]
-  MEAN --> BEST["80.705 today"]
+  MEAN --> BEST["84.285 today"]
 ```
 
 ## 6. The lever that worked — switch off gpt_oss's hidden reasoning
