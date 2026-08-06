@@ -39,14 +39,22 @@ steps**. One entry per submission or notable local run.
     decline). Misled by an in-process lab THREE times now.
   - **gemma multi-hop is especially bad** (61→49): fires only ~2 posts but pays 3 relay-inflated calls.
   - **Fill ladder mirrors E5l:** 0.80→0.90 helps (73→79), 0.96 drops (77.5) — more candidates → declining.
-  - **CONFIRMED: 84.285 is the public ceiling.** Every throughput lever now refuted on the board — blind-emit
-    (E4q), gemma-push (E5c/E5l), message-forms (E5f), burst (here). Common cause: the relayed replay punishes
-    MORE candidates and MORE hops/candidate far more than any in-process lab shows. **No in-process lab is
-    board-faithful for throughput; stop projecting from one.**
-  - **DECISIONS:** (1) **REVERT the committed default** — attack.py ships BURST_K=7 (a known regression);
-    restore the proven single-post config (gemma blind-700 + gpt validation-fill = 84.285). (2) Keep burst
-    code dormant (BURST_K=1) for the record. (3) Public is exhausted; the remaining frontier is the **PRIVATE
-    board** (hidden guardrail = final rank) — the one lever not yet exhausted.
+  - **84.285 is our current best — NOT a ceiling** (CLAUDE.md axiom: the top is reachable). The throughput
+    levers WE tried are refuted on the board — blind-emit (E4q), gemma-push (E5c/E5l), message-forms (E5f),
+    burst (here). Their common failure mode is a real, reusable clue: **the relayed board punishes MORE
+    candidates and MORE hops/candidate far more than any in-process lab shows, and we cannot yet predict
+    that cost.** The ~112 leaders prove a lever EXISTS that we have not found — so **our model of the board's
+    replay economics is incomplete; that gap IS the next problem to crack**, not a wall to accept.
+  - **THE OPEN QUESTION (reframed):** what do the ~112 leaders do that we don't? Candidates to chase next
+    session: (a) reverse-engineer the board's true per-candidate cost function (why does it punish volume so
+    hard? is there a cheaper-per-post trace we haven't imagined — a different tool, a different predicate, a
+    trace shape that scores >18/call?); (b) re-read the top kernels/discussion for the actual mechanism;
+    (c) the PRIVATE (hidden-guardrail) board, which decides final rank and we've barely probed.
+  - **DECISIONS:** (1) **REVERT the committed default** — attack.py shipped BURST_K=7 (a regression);
+    restore the proven single-post config (BURST_K=1; best banked = gemma blind-700 + gpt validation-fill =
+    84.285). (2) Keep burst code dormant for the record. (3) A build-time lesson (not a stopping point):
+    stop *projecting* board score from an in-process lab — but keep using labs for what they DO predict
+    (fire-rate, safety, relative shape).
 
 ## E5p — PORT + LAB-VERIFY: burst ported to attack.py, real-gpt sizecheck SAFE + saturates (no submission)
 - **Date:** 2026-08-05. Ported the E5o burst into attack.py (gpt/forge route only): `_forge_plan_message`

@@ -3,14 +3,21 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
-**CURRENT BEST: gemma-blind-700 = 84.285** (E5c, single-post) — the confirmed PUBLIC ceiling. Every
-throughput lever is now refuted on the board; the remaining frontier is the PRIVATE (hidden-guardrail) board.
-- **E5q RESULT (2026-08-06) — BURST REFUTED; single-post 84.285 stands.** All 5 burst slots scored BELOW
-  84.285 (best slot2 K=7@0.90 = 79.295). gpt burst row ~98 < single-post 108; gemma burst ~49 < notext 61.
-  WHY: the relayed board's later burst hops cost ~2× the first (not the lab's 1.33×), inverting the wrap-up
-  amortization — an in-process lab misled us a THIRD time (cf. E5g, E5m). **DEFAULT REVERTED: BURST_K=1**
-  (gpt→single-post validation-fill, gemma→notext); burst code kept dormant. Public throughput exhausted.
-  **→ weight shifts to the PRIVATE board (E-P2: real-model read-then-send under a permissive guardrail).**
+**AXIOM (CLAUDE.md): the TOP of the leaderboard is reachable — take it as given.** Our best SO FAR is
+**gemma-blind-700 = 84.285** (E5c, single-post). The ~112 leaders prove a lever exists we haven't found;
+84.285 is a waypoint, never a ceiling. **The next problem = why can't we predict the board's replay cost,
+and what do the leaders do that we don't?**
+- **E5q RESULT (2026-08-06) — burst refuted (a fact, not a wall).** All 5 burst slots scored BELOW 84.285
+  (best slot2 K=7@0.90 = 79.295). gpt burst row ~98 < single-post 108; gemma burst ~49 < notext 61. WHY: the
+  relayed board's later burst hops cost ~2× the first (not the lab's 1.33×), inverting the wrap-up
+  amortization — an in-process lab mispredicted the board a THIRD time (cf. E5g, E5m). That repeated failure
+  is the CLUE: **we do not yet understand the board's per-candidate cost function.** DEFAULT REVERTED to
+  BURST_K=1 (gpt→single-post validation-fill, gemma→notext); burst code kept dormant.
+- **[ ] NEXT SESSION — reframe & hunt (do NOT settle at 84):** (a) reverse-engineer the board's true
+  per-candidate cost (why does volume get punished so hard? is there a >18/call trace, a cheaper tool, a
+  different predicate?); (b) re-read the top kernels/discussion for the ACTUAL mechanism the ~112 leaders
+  use; (c) the PRIVATE hidden-guardrail board (decides final rank; barely probed). Start fresh; re-run the
+  7 steps on the 84→112 gap itself.
 - **E5m (2026-08-05) — THE BOARD LAW, AND THE GAP IS ONE MEASURABLE QUANTITY.** Fitting the 7 scored points
   gives **`gemma N_eff ≈ 818 − 0.207·N`**: replay budget ≈ 818 candidate-slots (⇒ **~11 s/gemma-cand**, = the
   VERIFIED C5 overhead), forced optimum `N* ≈ 678` (= the ~700 wall). **84.285 is the fixed point of an ~11 s
@@ -74,9 +81,11 @@ throughput lever is now refuted on the board; the remaining frontier is the PRIV
 - **PRIMITIVE PROVEN OPTIMAL (E4x).** Source-verified: 18 pts/clean-call is the max (top severity 16 + 1
   cell 2); every stacking path is guardrail-blocked (taint window 5 ⊇ predicate window 2; secret-path
   denied; all SHARE/WRITE/EXEC tools on the blocklist). **Consistent with the live board** (top 112.865,
-  dense ~104-113 band, nothing > the 180 ceiling → everyone shares the 18/call primitive). **STOP hunting
-  for a better primitive.** The 80→112 gap is decoded as a **gemma throughput gap** (leaders ~1254
-  cand/model; us gpt_oss ~1200 ✓ + gemma ~589; notext only →~740→mean ~87, leaves ~1.7× residual on gemma).
+  dense ~104-113 band, nothing > the 180 row cap → the field shares an 18/call-ish primitive). This proof
+  is for the primitive WE use — **it is NOT permission to stop.** If throughput turns out unreachable (E5q),
+  re-open it: hunt a trace that scores >18/call (a predicate/tool/shape we dismissed), because the axiom says
+  a higher score exists. The 80→112 gap read as a throughput gap — but every throughput lever failed on the
+  board (E5q), so that reading is INCOMPLETE, not closed.
 - **REDIRECTED FRONTIER (only two levers left):** (1) **gemma seconds-per-candidate** — close the ~1.7×
   residual the leaders have (better gemma prefill? cheaper turns? are we under-using the budget? — the
   1800-vs-9000s discrepancy E4v may be relevant). (2) **PRIVATE-guardrail robustness** — the hidden board.

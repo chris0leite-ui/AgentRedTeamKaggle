@@ -9,6 +9,13 @@ The operating manual. Kept deliberately short; details live in the files it poin
 3. **`docs/competition/todo.md`** — what's next.
 
 ## Hard rules
+- **AXIOM: reaching the TOP of the leaderboard is achievable, and we take that as given.** Our current
+  best is never "the ceiling" — only the best we have *so far*. The ~112 leaders are an existence proof
+  that a higher score exists, so whenever the evidence says "we've exhausted every lever," the correct
+  conclusion is **our model of the problem is incomplete**, NOT that the board has a wall. Never write or
+  imply "this is the ceiling / public is exhausted / no lever left." A refuted lever is a fact; "therefore
+  we're done" is a banned inference. Respond to a dead end by REFRAMING the problem (re-run the 7 steps on
+  the gap itself) and by finding what the leaders know that we don't — not by settling.
 - **Git.** Develop on `claude/kaggle-ai-agent-security-8i09kr`. Clear commit messages. Never push
   to another branch without permission.
 - **No outward actions without an explicit go-ahead in that turn.** Do not submit to Kaggle, open a
