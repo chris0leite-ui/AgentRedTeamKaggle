@@ -5,6 +5,44 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E6 — LEADER-KERNEL PULL: the 84→112 gap is fill-fraction + re-roll variance, not a missing primitive
+- **Date:** 2026-08-06. Pulled the live leaderboard + 7 top public kernel sources via the Kaggle API
+  (kept under the gitignored `refs/`). Directive: find what the ~112 leaders do that we don't.
+- **Live board (top):** 116.030 (ADARSH REDDY B) · 113.180 · **112.225 = Pilkwang Kim** · 111.870 ·
+  110.3 · … dense band 104–116. **CORRECTS our docs:** pilkwang is NOT a "~LB60 kernel" — pilkwang is
+  #3 at 112.225. The fresh `pilkwang v3.1.2` source is **byte-identical** to our committed local copy.
+  ⇒ the leaders' public code uses the SAME single-post `http.post`+`SECRET_MARKER` primitive we do.
+- **Observation 1 — replay fill fraction (universal, unambiguous):** tetsutani `REPLAY_SAFE=0.99`
+  (reported 88.5/89.0); assiaben `REPLAY_SAFE=0.99` ("79pt breakthrough, 5 templates + PROBE_REPS=5");
+  dimong4 (most-upvoted, 244) `REPLAY_SAFE_FRAC=0.98`; nctuan `REPLAY_SAFE_FRAC=0.95–0.97`. **OURS:
+  0.80 (burst `_BURST_FILL_FRAC`) / 0.85 (gemma `REPLAY_SAFE_FRAC`) / 0.92 (gpt `_BUDGET_FILL_FRAC`).**
+  Fill frac ≈ candidate count ≈ score; we run 10–19 pts of the replay budget below the field.
+- **Observation 2 — the board is a high-variance lottery the leaders RE-ROLL:** nctuan verbatim —
+  *"Fire-rate-bound ~84±5; public board keeps your BEST, so re-roll"*; calls N=4 multipost *"the mp4
+  lottery."* tetsutani — *"sub-point differences cannot be distinguished from noise"*, *"treating the
+  latest timeout batch as a hard negative result."* They fill to 0.97–0.99, EAT the occasional void,
+  and the board keeps the best lucky (non-void) timing roll → ~110–116.
+- **Observation 3 — their multipost IS our "burst":** nctuan `SLOW_MULTIPOST_N` calls the same
+  `_forge_plan_msg` analysis-channel forge we ported (E5o/E5p); `SLOW_MULTIPOST_N=4 → 90.090` on the
+  slow (gpt) row, single-post gemma, at frac 0.95–0.97. Our E5q burst got 73–79 at frac 0.80 across 5
+  single rolls.
+- **Observation 4 — our gpt path sizes to the GENERATION clock, not replay.** gpt fills to
+  `_BUDGET_FILL_FRAC` trusting gen≈replay; the leaders (dimong4/nctuan) apply `REPLAY_SAFE_SIZING`
+  (measured per-candidate replay cost, `COEF=1.0`, probe at 8 hops) to BOTH rows. Our own note at
+  `attack.py:82` already flags "extending that ledger to gpt would recover the margin" (deprioritized).
+- **Recommended next steps (no submission yet — held for go-ahead):**
+  1. Apply `REPLAY_SAFE_SIZING` to the gpt row too (`COEF=1.0`, `FRAC≈0.97`, 8-hop probe); raise gemma
+     `REPLAY_SAFE_FRAC 0.85→0.97`, `_REPLAY_COEF_SAFETY 1.20→1.0`, drop `_GEMMA_REPLAY_CAP`.
+  2. Re-roll the SAME aggressive config across days (board keeps best); stop treating a single noisy
+     submission as deterministic signal or a "refutation" (re-examine E5e/E5f/E5q voids under this lens).
+  3. Optionally layer `SLOW_MULTIPOST(K=4)` on gpt at 0.97 (the nctuan-90 config) as a higher-variance roll.
+  4. Private track unchanged: our clean-`http.post` route survives `persistent_provenance` (E-P1); the
+     leaders' aggressive public re-rolls may not be private-safe — a possible edge on the ranking axis.
+- **Housekeeping this session:** restored the banked best as the shipped default
+  (`attack.py GEMMA_BLIND_TARGET 0→700`; the repo had been left on the 82.755 self-sizing config).
+
+---
+
 ## E5q — SUBMITTED: the 5-slot burst frontier map (fill ladder + gemma lever + K width)
 - **Date:** 2026-08-05. Spent all 5 daily slots to BRACKET the burst frontier in one shot (12h latency, no
   intraday adaptation; downside protected — LB keeps the standing 84.285). The sizecheck (E5p) already

@@ -7,6 +7,13 @@ Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR
 **gemma-blind-700 = 84.285** (E5c, single-post). The ~112 leaders prove a lever exists we haven't found;
 84.285 is a waypoint, never a ceiling. **The next problem = why can't we predict the board's replay cost,
 and what do the leaders do that we don't?**
+- **E6 ANSWERED "what do the leaders do that we don't" (2026-08-06, leader-kernel pull):** SAME
+  single-post primitive (fresh pilkwang == our local copy; pilkwang is #3@112.225, NOT ~LB60). Deltas:
+  (1) they fill replay to **0.95–0.99**, we fill 0.80–0.92; (2) the board is a **±5 lottery they RE-ROLL**
+  (board keeps best), we read single noisy runs as deterministic "refutations"; (3) their multipost ==
+  our burst (`SLOW_MULTIPOST_N=4 → 90.090`); (4) our gpt sizes to the GEN clock, not replay-safe.
+  **NEXT (held for go-ahead):** replay-safe-size BOTH rows at FRAC≈0.97 (COEF=1.0), then re-roll. See E6.
+  **DONE this session:** reverted the shipped default to the banked best (GEMMA_BLIND_TARGET 0→700).
 - **E5q RESULT (2026-08-06) — burst refuted (a fact, not a wall).** All 5 burst slots scored BELOW 84.285
   (best slot2 K=7@0.90 = 79.295). gpt burst row ~98 < single-post 108; gemma burst ~49 < notext 61. WHY: the
   relayed board's later burst hops cost ~2× the first (not the lab's 1.33×), inverting the wrap-up

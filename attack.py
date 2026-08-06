@@ -187,7 +187,11 @@ ONE_HOP_GEMMA_FILL = True
 # a precise probe of gemma's replay ceiling (E4q bounds plain ~610; notext is leaner so ~760-800). Scores
 # the row if TARGET ≤ ceiling; VOIDS if above it. gpt_oss (forge) is untouched (validation-fills ~1200).
 # 0 = off (use validation-fill). Set per-kernel by make_notebook.py to fire the bracket.
-GEMMA_BLIND_TARGET = 0
+# E5l BANKED THIS AS THE PRODUCTION DEFAULT: blind-700 (notext) scored 84.285 — our best — while the
+# replay-safe self-sizing fill overshot to ~1000 and REGRESSED to 82.755. 700 ≈ the forced fixed point
+# of gemma's ~11s/candidate replay (E5m N* ≈ 678), so it neither undersizes nor voids. gpt stays on its
+# validation-fill (~1200/row-108). This restores the standing best as the shipped default.
+GEMMA_BLIND_TARGET = 700
 # E5c: gemma push CONFIRMED the relay gap (validation-fill undersizes; gemma 589→700 = +2.57 → 84.285).
 # gpt_oss is almost certainly undersized too and is the higher-value row (can climb toward the 180 cap).
 # When >0 AND the router picked FORGE (⇒ gpt_oss), blind-fill gpt_oss to EXACTLY this many forge candidates
