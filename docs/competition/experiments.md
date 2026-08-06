@@ -25,7 +25,28 @@ steps**. One entry per submission or notable local run.
   overrun); gpt sizecheck (E5p) SAFE at 0.80, and the replay/gen ratio (0.96) predicts 0.90 safe / 0.96 near
   the edge (intended). gemma burst uses the SAME self-sizing mechanism (model-agnostic) — void-safe by the
   construction the gpt sizecheck validated. All 5 passed the offline GREEN gate.
-- **RESULTS: PENDING** (server rerun ~12h). Read tomorrow; pick production config from the frontier map.
+- **RESULTS (2026-08-06) — BURST REFUTED ON THE BOARD; single-post 84.285 stands.** All 5 scored, **every
+  slot BELOW 84.285:** slot2 K=7@0.90 **79.295** (best) · slot3 @0.96 77.500 · slot5 K=4@0.90 76.530 · slot4
+  +gemma-burst 73.360 · slot1 @0.80 72.955.
+  - **Implied rows (gemma notext=60.6):** gpt BURST peaks ~98 (slot2) — **10 BELOW single-post gpt 108**;
+    gemma BURST (slot4) ~49 — **12 BELOW notext 61**. Burst REGRESSES BOTH rows. Projected 104-124; got 73-79.
+  - **WHY (the E5g/E5m lesson a THIRD time):** row 98 ⇒ ~1089 posts; at the sizecheck's 6 posts/cand that is
+    ~181 cands × 7 calls = ~1267 calls in 9000s = **~7.1 s/call vs single-post's 3.75 s/call** → the board's
+    later burst hops cost ~2× the first (growing KV/prefill through the RELAY). E5o measured prefill_grow only
+    1.33× IN-PROCESS; the relayed board is ~2×, which KILLS the wrap-up amortization (7 calls / 6 posts @ 2×
+    = 2.3 calls/post, WORSE than single-post's 2). **Even the real-GGUF sizecheck (in-process replay) did NOT
+    predict the board** — same relayed-replay blind spot as E5g (1.2 s lab vs ~11 s board) and E5m (N_eff
+    decline). Misled by an in-process lab THREE times now.
+  - **gemma multi-hop is especially bad** (61→49): fires only ~2 posts but pays 3 relay-inflated calls.
+  - **Fill ladder mirrors E5l:** 0.80→0.90 helps (73→79), 0.96 drops (77.5) — more candidates → declining.
+  - **CONFIRMED: 84.285 is the public ceiling.** Every throughput lever now refuted on the board — blind-emit
+    (E4q), gemma-push (E5c/E5l), message-forms (E5f), burst (here). Common cause: the relayed replay punishes
+    MORE candidates and MORE hops/candidate far more than any in-process lab shows. **No in-process lab is
+    board-faithful for throughput; stop projecting from one.**
+  - **DECISIONS:** (1) **REVERT the committed default** — attack.py ships BURST_K=7 (a known regression);
+    restore the proven single-post config (gemma blind-700 + gpt validation-fill = 84.285). (2) Keep burst
+    code dormant (BURST_K=1) for the record. (3) Public is exhausted; the remaining frontier is the **PRIVATE
+    board** (hidden guardrail = final rank) — the one lever not yet exhausted.
 
 ## E5p — PORT + LAB-VERIFY: burst ported to attack.py, real-gpt sizecheck SAFE + saturates (no submission)
 - **Date:** 2026-08-05. Ported the E5o burst into attack.py (gpt/forge route only): `_forge_plan_message`

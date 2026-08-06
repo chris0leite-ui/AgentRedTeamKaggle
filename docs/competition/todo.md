@@ -3,12 +3,14 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
-**CURRENT BEST: gemma-blind-700 = 84.285** (E5c) — the single-post ceiling. **BURST is the lever past it.**
-- **E5q (2026-08-05) — ALL 5 SLOTS SUBMITTED: the burst frontier map, PENDING (~12h).** gpt hop-saturation
-  burst (E5o/E5p, verified SAFE + 6.91 posts/cand). Fill ladder 0.80/0.90/0.96 (slots 1-3, refs 55278205/
-  209/319), gemma-burst lever (slot 4, ref 55278355), K=4 width (slot 5, ref 55278321). Projected mean
-  ~104-124. **READ TOMORROW:** safe-fill edge (does 0.96 void?), gemma-burst gain (slot4−slot2), K trade
-  (slot5 vs slot2) → pick production config. Downside protected (LB keeps 84.285).
+**CURRENT BEST: gemma-blind-700 = 84.285** (E5c, single-post) — the confirmed PUBLIC ceiling. Every
+throughput lever is now refuted on the board; the remaining frontier is the PRIVATE (hidden-guardrail) board.
+- **E5q RESULT (2026-08-06) — BURST REFUTED; single-post 84.285 stands.** All 5 burst slots scored BELOW
+  84.285 (best slot2 K=7@0.90 = 79.295). gpt burst row ~98 < single-post 108; gemma burst ~49 < notext 61.
+  WHY: the relayed board's later burst hops cost ~2× the first (not the lab's 1.33×), inverting the wrap-up
+  amortization — an in-process lab misled us a THIRD time (cf. E5g, E5m). **DEFAULT REVERTED: BURST_K=1**
+  (gpt→single-post validation-fill, gemma→notext); burst code kept dormant. Public throughput exhausted.
+  **→ weight shifts to the PRIVATE board (E-P2: real-model read-then-send under a permissive guardrail).**
 - **E5m (2026-08-05) — THE BOARD LAW, AND THE GAP IS ONE MEASURABLE QUANTITY.** Fitting the 7 scored points
   gives **`gemma N_eff ≈ 818 − 0.207·N`**: replay budget ≈ 818 candidate-slots (⇒ **~11 s/gemma-cand**, = the
   VERIFIED C5 overhead), forced optimum `N* ≈ 678` (= the ~700 wall). **84.285 is the fixed point of an ~11 s

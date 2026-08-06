@@ -210,7 +210,10 @@ GPT_BLIND_TARGET = 0
 # FORGE (gpt) route ONLY: gemma is not Harmony (bursts to only ~2 posts, E5o) and stays on its notext
 # replay-safe fill. K ≤ 7 fits the 8-hop scored-replay cap (K posts + 1 wrap). BURST_K=1 == a single forge
 # post (the pre-burst behavior). See E5o.
-BURST_K = 7
+# E5q RESULT: burst REFUTED on the board — gpt burst row ~98 < single-post 108 (the relayed later-hop cost
+# is ~2×, not the lab's 1.33×, so the wrap-up amortization inverts). Default reverted to 1 (single-post);
+# the burst path stays for the record and lab use (make_notebook --burstk arms it). Do NOT ship K>1.
+BURST_K = 1
 # A burst candidate runs ~K+1 model-calls (vs 2 for single-post) → ~(K+1)/2× the per-candidate REPLAY cost,
 # and gpt_oss VOIDS on any replay overrun (E5e/E5f: even +4% zeroed the row). The burst fill PROBES each
 # candidate at the full 8-hop replay shape — so the measured generation cost IS the replay cost (gen≈replay
