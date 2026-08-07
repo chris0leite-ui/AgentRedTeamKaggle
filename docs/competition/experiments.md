@@ -31,6 +31,21 @@ steps**. One entry per submission or notable local run.
   needs a NOVEL mechanism (re-open E4x: is any trace >18/call?) or the PRIVATE board. If it climbs ⇒ the
   earlier "degrade" was a gpt-side confound and more gemma candidates is the path.
 
+### E8 SUBMITTED (2026-08-07) — all 5 slots on the gemma(N) curve + gpt anchor (PENDING)
+- Refs: **55325240** iso-gemma@700 · **55325244** iso-gpt@1200 · **55325272** iso-gemma@900 ·
+  **55325274** iso-gemma@1100 · **55325293** iso-gemma@1300. All COMPLETE+SELF-TEST OK before submit.
+- **Readout (each isolates one row; the other row ≈ 0.09):** `row = 2 × publicScore − 0.09 ≈ 2 × mean`.
+  - iso-gpt@1200 → **true gpt_row** (expect ~108 if our inference holds; if not, the model is wrong).
+  - iso-gemma@700/900/1100/1300 → **gemma_row(N)** — the first unconfounded gemma throughput curve.
+- **Decision rule when scored (~12h):**
+  - **gemma_row rises across 700→1300** ⇒ the E5m/E5l "degrade past 700" was a gpt-side confound or fill
+    artifact; more gemma candidates IS the path — push N toward the peak next, targeting mean >100.
+  - **gemma_row peaks ~700 then falls** ⇒ single-post gemma is genuinely capped; >100 needs a NOVEL
+    mechanism (re-open E4x: any trace >18/call?) or a pivot to the PRIVATE board. No more fill/throughput slots.
+  - **any iso run VOIDS (blank)** ⇒ that N overruns gemma replay — a hard cost ceiling, same conclusion as a fall.
+- Banked best stays 84.285 throughout (isolation returns few candidates ⇒ these means are LOW by construction;
+  they are MEASUREMENTS, not attempts to beat the LB).
+
 ---
 
 ## E7 — SUBMITTED: the 5-slot aggressive-fill + multipost bracket (first real test of the E6 findings)
