@@ -5,6 +5,44 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E9 — FRAMEWORK CHANGED (host update, 2026-08-05); LB INVALIDATED; our old conclusions are now SUSPECT
+- **Date:** 2026-08-07 (checked Kaggle directly, 19:38 UTC / 12:38 PT). Host announcement + verified from
+  the SDK diff (re-downloaded the Aug-5 dataset; `aicomp_sdk` UNCHANGED — scorer/predicates/guardrail
+  identical — ALL changes in `kaggle_evaluation`).
+- **What actually changed (source-verified diffs):**
+  1. **Partial score on replay timeout** (`jed_attack_gateway.py`: `completed_candidates` checkpoints +
+     `_cancel_attack_session`). A replay timeout NO LONGER voids — it keeps the score accumulated before the
+     deadline. **This kills our entire void-avoidance meta.** Over-returning candidates is now pure upside.
+  2. **Gemma tool-call parser fix** (`gemma_model_server.py`: new `KaggleGemma4ToolCallParser` JSON-parses
+     `{`-wrapped arguments). Per the host, it affected **SUBSEQUENT (multi-hop)** gemma calls — single-post
+     gemma (1 hop) was unaffected, but multi-hop/multipost gemma had later posts DROPPED. Now fixed.
+  3. Budget **9000 → 8750 s** per phase; gateway response buffer 30 → 175 s. attack.py-phase timeout still
+     terminates (only REPLAY timeouts are now partial-credit).
+- **Leaderboard state:** the old LB is invalidated; ALL our submissions now show `SubmissionStatus.ERROR`
+  (stale scores displayed). The NEW-framework LB is already live and filling: **top 107.06**, several teams
+  >100 today (101.29, 99.87…), all resubmitted 2026-08-07. Old top was 116.
+- **Rerun-selection deadline (9am PT Aug 7) PASSED** (~3.5h before we checked). We did not select in the UI,
+  so Kaggle defaults to rerunning our **2 highest public scores** (the ~84.285 era) onto the new LB.
+- **Our E7 (Aug 6) and E8 (Aug 7) ran during the transition → contaminated/ERROR; do NOT trust those
+  numbers.** The one pre-invalidation new-framework signal was iso-gpt@1200 = COMPLETE 40.560 (⇒ gpt_row
+  ~81, not ~108) — suggestive that the rows moved, but unreliable amid the invalidation.
+- **STRATEGIC RESET — old-framework conclusions built on the void/timeout behavior are now SUSPECT:**
+  - "returning more candidates hurts / voids" (E5m N_eff law, E5l, E5e gpt-void, E5f) → **likely OBSOLETE**
+    (partial-score). Filling toward the 2000 cap is now safe; the new leaders' ~107 is almost certainly
+    max-fill (now void-safe) + the parser fix.
+  - gemma MULTIPOST "regressed" (E5q/E7) → **partly the parser bug dropping later gemma posts** → re-test.
+  - 84.285 was an OLD-framework number; it no longer exists on the board until our default reruns land.
+- **Done this session:** re-downloaded + swapped local `sdk/` to the Aug-5 framework; offline gate still
+  GREEN on it (deterministic runs, mock fires 18/candidate).
+- **NEXT SESSION (5 fresh slots, NEW framework):** re-baseline, don't trust the old map. (1) MAX-fill
+  single-post BOTH rows (return toward the 2000 cap — partial-score makes over-return free); (2) gemma
+  multipost re-test (parser fixed → later posts should now score); (3) read the true rows again (iso probes)
+  once the invalidation settles. Target: match the live ~100-107 band. Note the host's "harness-specific
+  behavior may not carry to final rankings" warning — the Harmony-forge is the exposed part; the clean
+  http.post/SECRET_MARKER exfil is the documented predicate and is safe.
+
+---
+
 ## E8 — PER-ROW ISOLATION PROBES (built + pushed, ready to submit; no slots left today)
 - **Date:** 2026-08-06. Directive: reach >100 without public kernels. BOTE: >100 needs gpt_row+gemma_row
   > 200; gpt is near its void ceiling (~108), so ~90+ must come from gemma (~61 today ⇒ needs ~1.5× more
