@@ -5,6 +5,34 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E8 — PER-ROW ISOLATION PROBES (built + pushed, ready to submit; no slots left today)
+- **Date:** 2026-08-06. Directive: reach >100 without public kernels. BOTE: >100 needs gpt_row+gemma_row
+  > 200; gpt is near its void ceiling (~108), so ~90+ must come from gemma (~61 today ⇒ needs ~1.5× more
+  firing gemma candidates). Every throughput lever we've tried is refuted (fill E5m/E7, multipost E5q/E7,
+  wording E5f). **The blocker: we've NEVER measured gpt_row and gemma_row separately** — the CLI exposes
+  only the mean, so all per-row numbers are INFERRED (assuming the other row), and those inferences have
+  been wrong repeatedly.
+- **What was built (no submission — 0 slots left today):** `ISOLATE_ROW` knob (attack.py, 42bc6b1): the
+  router detects the model (notext=gemma, forge=gpt) and returns ONE trivial firing candidate for the OTHER
+  model (row ≈ 0.09, not void) ⇒ board mean ≈ target_row/2. Two probe kernels built, offline-GREEN, pushed
+  (COMPLETE + SELF-TEST OK, ready to `competitions submit` tomorrow): `attack-e8-iso-gemma` (ISOLATE_ROW=
+  "gemma", gemma at the default blind-700), `attack-e8-iso-gpt` (ISOLATE_ROW="gpt", gpt validation-fill).
+- **DELIBERATELY SKIPPED the in-process profiler.** An in-process lab reproduces E5h (gemma replay ~1.2s,
+  all fire) and does NOT transfer to the board (the E5g/E5m lesson — board cost is relay-bound, unreproducible
+  locally). The only board-faithful instrument is a submission; row isolation is how we read it.
+- **Read when submitted (tomorrow):** iso-gemma mean × 2 = true gemma_row (expect ~60.6 if our inference is
+  right); iso-gpt mean × 2 = true gpt_row (expect ~108). **If either differs materially, our entire board
+  model is wrong** — that alone is worth 2 slots. Then trace the gemma(N) curve UNCONFOUNDED: iso-gemma at
+  N=900/1100 (does gemma_row climb toward 90 or collapse past 700? = the whole >100 question, seen directly
+  for the first time instead of inferred from the mean).
+- **Tomorrow's 5-slot plan:** (1) iso-gemma@700 [baseline], (2) iso-gpt@1200 [baseline] — verify the
+  decomposition; (3) iso-gemma@900, (4) iso-gemma@1100 — the true gemma(N) curve; (5) spare/re-roll the
+  most informative. If gemma_row genuinely collapses past 700 unconfounded ⇒ single-post caps ~84 and >100
+  needs a NOVEL mechanism (re-open E4x: is any trace >18/call?) or the PRIVATE board. If it climbs ⇒ the
+  earlier "degrade" was a gpt-side confound and more gemma candidates is the path.
+
+---
+
 ## E7 — SUBMITTED: the 5-slot aggressive-fill + multipost bracket (first real test of the E6 findings)
 - **Date:** 2026-08-06. Spent all 5 daily slots on the E6 thesis: the leaders fill replay to 0.95–0.99
   and the gpt MULTIPOST row (→~150+) carries the mean to ~112, while gemma is floored (~60, E5m). Our
