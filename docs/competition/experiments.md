@@ -5,6 +5,31 @@ steps**. One entry per submission or notable local run.
 
 ---
 
+## E10 — NEW-FRAMEWORK RE-BASELINE: 5 slots PREPPED (built, gated, pushed; ready to submit)
+- **Date:** 2026-08-07. First bracket on the Aug-5 framework (partial-score ⇒ max-fill is free; gemma
+  parser fixed). Built via `tools/build_probes.py` (gate = direct `run()` call, all GREEN), pushed as
+  Kaggle kernels, all COMPLETE + SELF-TEST OK. **Not submitted (0 slots left today); fire tomorrow.**
+
+  | kernel (slug) | overrides | tests |
+  |---|---|---|
+  | `attack-e10-maxfill-both` | GEMMA_BLIND_TARGET=2000, GPT_BLIND_TARGET=2000 | the new core play — over-return, partial-score banks capacity (removes the gemma-700 gen-probe bottleneck) |
+  | `attack-e10-baseline` | (defaults: gemma blind-700 + gpt validation-fill) | old 84.285 config, rescored on the new fw (honest anchor) |
+  | `attack-e10-maxfill-gemma` | GEMMA_BLIND_TARGET=2000, GPT_BLIND_TARGET=0 | gemma max-fill isolated (gpt validation-fill) |
+  | `attack-e10-gemma-mp4` | GEMMA_BLIND_TARGET=0, GEMMA_BURST_K=4, GPT_BLIND_TARGET=2000 | gemma multipost re-test (parser fix should now score later posts) |
+  | `attack-e10-gpt-mp4` | GPT_BLIND_TARGET=0, BURST_K=4, GEMMA_BLIND_TARGET=2000 | gpt multipost re-test (overrun now banks partial) |
+
+- **Submit tomorrow (turnkey):** `kaggle competitions submit ai-agent-security-multi-step-tool-attacks
+  -k chrisleitescha/<slug> -v 1 -f submission.csv -m "<msg>"` for each of the 5.
+- **Decision rule when scored:** (1) does `maxfill-both`/`maxfill-gemma` BEAT `baseline`? ⇒ partial-score +
+  removing the gen-probe cap lifts gemma (the E5m "more hurts" law was a void artifact). (2) does
+  `gemma-mp4` beat single-post gemma? ⇒ the parser fix revived gemma multipost. (3) does `gpt-mp4` beat
+  single-post gpt? ⇒ partial-score makes gpt multipost viable. Target: the live ~100-107 band.
+- **Caveat:** these use blind-emit (unvalidated N) — fine on the new fw (partial-score, no void). If a
+  blind config UNDER-fires on the real model (didn't happen for single-post historically), it scores low
+  but costs nothing (banked best is separate). Watch the host "harness-specific" warning re: the forge.
+
+---
+
 ## E9 — FRAMEWORK CHANGED (host update, 2026-08-05); LB INVALIDATED; our old conclusions are now SUSPECT
 - **Date:** 2026-08-07 (checked Kaggle directly, 19:38 UTC / 12:38 PT). Host announcement + verified from
   the SDK diff (re-downloaded the Aug-5 dataset; `aicomp_sdk` UNCHANGED — scorer/predicates/guardrail
