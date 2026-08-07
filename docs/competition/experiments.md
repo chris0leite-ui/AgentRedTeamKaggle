@@ -39,6 +39,38 @@ steps**. One entry per submission or notable local run.
      (the leaders' method), not new configs — unless multipost is flatly refuted at proper fill.
 - **STATUS: all 5 PENDING.** Banked best unchanged at 84.285 until a slot scores above it.
 
+### E7 RESULTS (2026-08-06) — thesis REFUTED; all 5 below 84.285; the public frontier is ~88-90, not 112
+- **Scores:** s1 SP replay-safe 0.96 = **80.100** · s2 SP 0.99 = 72.765 · s3 MP K4@0.97 = 74.640 ·
+  s4 MP K4@0.99 = 76.950 · s5 MP K7@0.97 = 73.440. **Best of day 80.1 < banked 84.285.** (CLI exposes
+  only the public MEAN, not the per-row split.)
+- **Aggressive fill HURTS us (E5m reconfirmed):** s1 (0.96) 80.1 > s2 (0.99) 72.8 — filling MORE scored
+  LESS. Replay-safe-both at 0.96 (80.1) < banked blind-700+gen-clock (84.285). "Fill to 0.99 like the
+  leaders" is a REGRESSION for us, not a lever.
+- **Multipost refuted AGAIN, NOT a fill artifact:** s5 (K=7) 73.4 < s3 (K=4) 74.6 — more posts/cand scored
+  worse, at proper fill (0.97-0.99), same as E5q at 0.80. Per-hop relay-cost inflation is real+high; burst
+  is DEAD for us.
+- **THE CORRECTION (source, no submission):** pilkwang's shipped public kernel is **BURST_K=1,
+  SLOW_MULTIPOST_N=1 — pure SINGLE-POST**. E6 over-read its multipost; the #3 leader does NOT multipost. Its
+  `_fill` is mechanically ~identical to our `_replay_safe_fill` (same replay-safe stop test, adaptive
+  margin, split-by-latency). Only tuning differs: PROBE_HOPS=0 (probe at 8 hops, not 1), REPLAY_COST_COEF=1.0,
+  FILL_BUDGET_FRAC=0.95 / REPLAY_SAFE_FRAC=0.97, adaptive MARGIN_S=47.
+- **THE REFRAME:** pilkwang PERSON is #3 @112.225 (submission 08-05) but the PUBLIC kernel is dated 07-24 —
+  an OLDER, lower submission. Public kernels self-report their tier in their own markdown: **tetsutani
+  88.5/89, nctuan ~84±5** (90 only on the K=4 lottery). So the **public frontier is ~88-90; 84.285 sits ~4
+  below it and ~24-28 below a PRIVATE method no public kernel reveals.** Grinding public single-post variants
+  tops out ~90 — E7 is evidence of exactly that ceiling. This RETIRES the E6 "just fill aggressively + re-roll
+  to 112" thesis: aggressive fill regressed, and the 112 recipe is not in any public kernel we can read.
+- **Recommended next steps (NEXT SESSION):**
+  1. **The control we never ran (1 slot):** re-pull + submit a top PUBLIC kernel VERBATIM (tetsutani, self-
+     reports 88.5/89) unmodified. ~88 ⇒ our harness is fine, public frontier ~90, bank ~+4 over 84.285.
+     ~84 ⇒ public code isn't even the ~88 recipe. Either way it ENDS speculation with a measurement.
+  2. **Stop grinding public single-post variants** (E7 shows they cap ~80-90 for us). Higher-ceiling bets:
+     (a) a genuinely NOVEL mechanism — a cheaper-per-replay candidate, or a trace scoring >18/call the
+     guardrail still clears (re-open E4x); (b) the PRIVATE board (final ranking, barely probed E-P1) — a
+     robust ~85 that survives the hidden guardrail may out-RANK a fragile public 112.
+  3. **Method lesson:** we had a leader's exact code and theorized on top of it instead of submitting it
+     verbatim first. Run the control FIRST.
+
 ---
 
 ## E6 — LEADER-KERNEL PULL: the 84→112 gap is fill-fraction + re-roll variance, not a missing primitive

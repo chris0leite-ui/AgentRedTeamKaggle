@@ -15,10 +15,17 @@ and what do the leaders do that we don't?**
   **DONE this session:** reverted default to banked best (GEMMA_BLIND_TARGET 0→700); added GPT_REPLAY_SAFE
   knob (6a262f6); **submitted the E7 5-slot bracket** (2 single-post replay-safe 0.96/0.99 + gpt multipost
   K4/K4/K7 fill 0.97/0.99/0.97; refs 55305206/09/238/239/257, all PENDING).
-- **[ ] NEXT SESSION — read E7 scores (~12h) and re-roll the winner:** (a) did any multipost slot beat
-  84.285? K=7 vs K=4 resolves per-hop cost inflation (E5q's 2× vs nctuan's 1.33×); (b) did gpt-replay-safe
-  0.99 void or score? (c) then PURE RE-ROLL of the winning config (board keeps best, ±5 variance — E6),
-  pushing K/fill toward the 112 leaders if multipost converts. See E7.
+- **E7 RESULT (2026-08-06) — THESIS REFUTED; all 5 < 84.285 (best s1=80.1).** Aggressive fill HURT
+  (0.96=80.1 > 0.99=72.8); multipost regressed again (K7=73.4 < K4=74.6, not a fill artifact). CORRECTION:
+  pilkwang's shipped kernel is pure SINGLE-POST (BURST_K=1), mechanically ~= our fill — multipost was a
+  red herring I over-read in E6. REFRAME: public kernels self-report ~88–90 (tetsutani 88.5, nctuan 84±5);
+  pilkwang's 112.225 (08-05) ≠ the public kernel (07-24). **84.285 is ~4 below the PUBLIC frontier; the 112
+  recipe is not in any public kernel.** See E7.
+- **[ ] NEXT SESSION — run the control, then pivot off public grinding:** (1) 1 slot: submit a top PUBLIC
+  kernel VERBATIM (tetsutani, self-reports 88.5/89) — ~88 ⇒ bank ~+4 + confirm harness/frontier; ~84 ⇒
+  public code isn't the recipe. (2) STOP grinding public single-post variants (they cap ~80–90 for us).
+  Higher-ceiling bets: (a) a NOVEL mechanism (cheaper-per-replay candidate, or >18/call trace — re-open
+  E4x); (b) the PRIVATE board (final rank; a robust ~85 may out-rank a fragile public 112). See E7.
 - **E5q RESULT (2026-08-06) — burst refuted (a fact, not a wall).** All 5 burst slots scored BELOW 84.285
   (best slot2 K=7@0.90 = 79.295). gpt burst row ~98 < single-post 108; gemma burst ~49 < notext 61. WHY: the
   relayed board's later burst hops cost ~2× the first (not the lab's 1.33×), inverting the wrap-up

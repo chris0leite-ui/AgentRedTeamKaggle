@@ -112,12 +112,16 @@ not mean-vs-min.)
   - **Refuted levers:** DENSITY/dense-multi (E4i: K single-posts bundled, overran); LIST form (E4k: gemma
     won't multi-post, gpt_oss ~1.15×); BLIND-EMIT (E4q: N=1200 voided → replay≈generation, no asymmetry);
     MULTI-POST (E4p: 33% fire / forge-only ~1.1×).
-  - **84.285 is NOT a ceiling (E6 — leader-kernel pull, 2026-08-06).** The ~112 leaders (incl. **pilkwang
-    #3 @112.225**, whose public kernel is BYTE-IDENTICAL to our local copy) use the SAME single-post
-    primitive. They differ by: (1) filling replay to **0.95–0.99** (we filled 0.85–0.92); (2) treating the
-    score as a **±5 lottery and RE-ROLLING** the same config (the board keeps your best); (3) the **gpt
-    MULTIPOST row** (→~150+) carrying the mean while gemma stays ~60 (floored, E5m). E7 (2026-08-06)
-    submits both levers as a 5-slot bracket. See E6/E7 in `experiments.md`.
+  - **The public frontier is ~88–90; 84.285 sits ~4 below it (E6/E7, 2026-08-06).** Public leader kernels
+    self-report their tier: tetsutani 88.5/89, nctuan ~84±5. They use the SAME single-post primitive —
+    **pilkwang's shipped kernel is BURST_K=1, SLOW_MULTIPOST_N=1 (pure single-post)**, mechanically ~= our
+    `_replay_safe_fill`; only tuning differs (PROBE_HOPS=0 probe-at-8-hops, COEF=1.0, FRAC 0.97, adaptive
+    margin). **E7 REFUTED the "fill aggressively + multipost → 112" thesis:** aggressive fill regressed
+    (s1 0.96=80.1 > s2 0.99=72.8) and multipost regressed again (K7 73.4 < K4 74.6). pilkwang PERSON is #3
+    @112.225 but that submission (08-05) is NOT the public kernel (07-24) — **the 112 recipe is not in any
+    public kernel.** So 84.285 is near the public ceiling; the top-15's edge is private/unpublished. Next:
+    submit a top public kernel VERBATIM (the control), then hunt a NOVEL mechanism or the PRIVATE board.
+    See E6/E7 in `experiments.md`.
   - The **private** guardrail (`persistent_provenance`, untestable) decides final rank; the forge is
     likely private-safe (tokens live in the user message, not tool args) but unverifiable — v6 plain is
     the safe fallback. See E4a–E4t.
