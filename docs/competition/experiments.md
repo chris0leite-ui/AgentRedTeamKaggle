@@ -8,7 +8,12 @@ steps**. One entry per submission or notable local run.
 ## E10 — NEW-FRAMEWORK RE-BASELINE: 5 slots PREPPED (built, gated, pushed; ready to submit)
 - **Date:** 2026-08-07. First bracket on the Aug-5 framework (partial-score ⇒ max-fill is free; gemma
   parser fixed). Built via `tools/build_probes.py` (gate = direct `run()` call, all GREEN), pushed as
-  Kaggle kernels, all COMPLETE + SELF-TEST OK. **Not submitted (0 slots left today); fire tomorrow.**
+  Kaggle kernels, all COMPLETE + SELF-TEST OK.
+- **SUBMITTED (2026-08-07, later): 4 of the 5** — the invalidation refunded today's E8 slots (4 were free).
+  Refs: **55335004** maxfill-both · **55335006** maxfill-gemma · **55335007** gemma-mp4 · **55335012**
+  gpt-mp4. All PENDING (new framework). **DROPPED `baseline`** (targets ~84, lowest upside; board keeps our
+  best across all submissions, so a low anchor doesn't help). The old 84.285 arrives anyway via the 2
+  default reruns. `attack-e10-baseline` stays built/pushed if we want the anchor later.
 
   | kernel (slug) | overrides | tests |
   |---|---|---|
