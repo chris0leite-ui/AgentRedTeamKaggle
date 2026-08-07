@@ -113,6 +113,12 @@ _LAT_FLOOR_S = 1e-3
 # _replay_safe_fill as gemma, so it sizes to the real replay budget instead of the gen clock. Default
 # False preserves the proven gen-clock path. Multipost (BURST_K>1) keeps its own _burst_fill sizing.
 GPT_REPLAY_SAFE = False
+# E8 (2026-08-06): ISOLATE one board ROW to read it UNCONFOUNDED. public = mean(gpt_row, gemma_row);
+# the CLI only exposes the mean, so every per-row number we have is INFERRED (assuming the other row).
+# When set, the router detects which model it faces (notext=gemma, forge=gpt) and returns just ONE trivial
+# firing candidate for the OTHER model (row ≈ 0.09, not void) → mean ≈ target_row/2, revealing the target
+# row directly. "" = off; "gemma" or "gpt" = isolate that row.
+ISOLATE_ROW = ""
 
 # --- DENSITY (E3o) ---------------------------------------------------------------
 # Each candidate is a CHAIN of K proven single-post messages. eval_predicates fires one
@@ -316,6 +322,18 @@ class AttackAlgorithm(AttackAlgorithmBase):
                   f"notext={t_notext:.3f} | fires p={f_plain:.2f} f={f_forge:.2f} n={f_notext:.2f}", flush=True)
         except Exception:
             pass
+
+        # E8: row isolation. If this is NOT the row we want to measure, return a single firing candidate
+        # (row ≈ 0.09, not void) so the board mean ≈ target_row/2 — reads the target row unconfounded.
+        if ISOLATE_ROW:
+            target = (ISOLATE_ROW == "gemma" and is_gemma) or (ISOLATE_ROW == "gpt" and is_gpt)
+            if not target:
+                if not findings:
+                    try:
+                        findings.append(AttackCandidate.from_messages([make(next(domains))]))
+                    except Exception:
+                        pass
+                return findings[:1]
 
         # E4y/E5c ceiling-bracket via blind-fill to an EXACT target — a precise probe of a model's REPLAY
         # ceiling (sizing to replay, not the generation clock). Confirm fire on a 1-hop sample (E4y: both
