@@ -3,6 +3,13 @@
 Backlog and status. Graduate an item to a GitHub Issue only when it becomes a PR-sized change.
 
 ## In flight
+- **⚠️ E9 (2026-08-07) — FRAMEWORK CHANGED (host, 2026-08-05); OLD LB INVALIDATED.** (1) replay timeout now
+  PARTIAL-credit (no void on over-return) ⇒ **MAX-fill to the 2000 cap is the new play**; (2) gemma parser
+  fixed (`{}`-wrapped multi-hop calls now score) ⇒ gemma multipost may work; (3) budget 9000→8750s. New LB
+  top ~107. Our 84.285 invalidated; rerun-selection deadline passed. **Old void-based conclusions
+  (return-more-hurts, gpt-void, multipost-dead) are SUSPECT.** sdk/ swapped to new framework. NEXT: re-baseline
+  (E10 slots prepped — max-fill + multipost re-test). See E9/E10.
+
 **AXIOM (CLAUDE.md): the TOP of the leaderboard is reachable — take it as given.** Our best SO FAR is
 **gemma-blind-700 = 84.285** (E5c, single-post). The ~112 leaders prove a lever exists we haven't found;
 84.285 is a waypoint, never a ceiling. **The next problem = why can't we predict the board's replay cost,
