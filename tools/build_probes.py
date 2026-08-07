@@ -72,8 +72,12 @@ def code_cell(src):
             "outputs": [], "source": src.splitlines(keepends=True)}
 
 PROBES = [
-    dict(slug="attack-e8-iso-gemma", title="Attack e8 iso gemma", ov={"ISOLATE_ROW": "gemma"}),
-    dict(slug="attack-e8-iso-gpt",   title="Attack e8 iso gpt",   ov={"ISOLATE_ROW": "gpt"}),
+    dict(slug="attack-e8-iso-gemma-900",  title="Attack e8 iso gemma 900",
+         ov={"ISOLATE_ROW": "gemma", "GEMMA_BLIND_TARGET": 900}),
+    dict(slug="attack-e8-iso-gemma-1100", title="Attack e8 iso gemma 1100",
+         ov={"ISOLATE_ROW": "gemma", "GEMMA_BLIND_TARGET": 1100}),
+    dict(slug="attack-e8-iso-gemma-1300", title="Attack e8 iso gemma 1300",
+         ov={"ISOLATE_ROW": "gemma", "GEMMA_BLIND_TARGET": 1300}),
 ]
 
 def overridden_src(ov):
