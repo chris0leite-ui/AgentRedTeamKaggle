@@ -72,12 +72,22 @@ def code_cell(src):
             "outputs": [], "source": src.splitlines(keepends=True)}
 
 PROBES = [
-    dict(slug="attack-e8-iso-gemma-900",  title="Attack e8 iso gemma 900",
-         ov={"ISOLATE_ROW": "gemma", "GEMMA_BLIND_TARGET": 900}),
-    dict(slug="attack-e8-iso-gemma-1100", title="Attack e8 iso gemma 1100",
-         ov={"ISOLATE_ROW": "gemma", "GEMMA_BLIND_TARGET": 1100}),
-    dict(slug="attack-e8-iso-gemma-1300", title="Attack e8 iso gemma 1300",
-         ov={"ISOLATE_ROW": "gemma", "GEMMA_BLIND_TARGET": 1300}),
+    # E10 re-baseline on the NEW framework (partial-score => max-fill is safe; gemma parser fixed).
+    # 1) pure MAX-fill both rows (blind 2000): the new core play — over-return, partial-score banks capacity.
+    dict(slug="attack-e10-maxfill-both", title="Attack e10 maxfill both",
+         ov={"GEMMA_BLIND_TARGET": 2000, "GPT_BLIND_TARGET": 2000}),
+    # 2) baseline = the old 84.285 config (gemma blind-700 + gpt validation-fill), rescored on new fw.
+    dict(slug="attack-e10-baseline", title="Attack e10 baseline",
+         ov={}),
+    # 3) gemma max-fill isolated benefit (gpt stays validation-fill).
+    dict(slug="attack-e10-maxfill-gemma", title="Attack e10 maxfill gemma",
+         ov={"GEMMA_BLIND_TARGET": 2000, "GPT_BLIND_TARGET": 0}),
+    # 4) gemma MULTIPOST re-test (parser fix should now score later posts) + gpt max-fill.
+    dict(slug="attack-e10-gemma-mp4", title="Attack e10 gemma mp4",
+         ov={"GEMMA_BLIND_TARGET": 0, "GEMMA_BURST_K": 4, "GPT_BLIND_TARGET": 2000}),
+    # 5) gpt MULTIPOST re-test (partial-score means an overrun now banks partial) + gemma max-fill.
+    dict(slug="attack-e10-gpt-mp4", title="Attack e10 gpt mp4",
+         ov={"GPT_BLIND_TARGET": 0, "BURST_K": 4, "GEMMA_BLIND_TARGET": 2000}),
 ]
 
 def overridden_src(ov):
@@ -90,8 +100,11 @@ def gate(src, name):
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     from aicomp_sdk.evaluation.ops import eval_attack
     from mock_agent import ObedientExfilAgent
-    found = eval_attack(mod.AttackAlgorithm, budget_s=12.0,
-                        agent_factory=lambda: ObedientExfilAgent(latency_s=0.05),
+    # latency 0.5 + budget 20 = test_pipeline's proven-safe regime: run() self-sizes to ~18 mock
+    # candidates so the offline REPLAY fits the budget (a replay overrun here is a tiny-budget artifact,
+    # not a board failure — on the board partial-scoring makes over-return safe by design).
+    found = eval_attack(mod.AttackAlgorithm, budget_s=20.0,
+                        agent_factory=lambda: ObedientExfilAgent(latency_s=0.5),
                         env_selection="gym", attack_env_seed=123, fixtures_dir=FIX)
     assert isinstance(found, list) and len(found) >= 1, f"{name}: empty/invalid return"
     return f"ISOLATE_ROW={mod.ISOLATE_ROW!r} run()->{len(found)} findings"
