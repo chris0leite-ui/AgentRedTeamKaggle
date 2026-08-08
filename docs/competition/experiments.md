@@ -15,6 +15,34 @@ steps**. One entry per submission or notable local run.
   best across all submissions, so a low anchor doesn't help). The old 84.285 arrives anyway via the 2
   default reruns. `attack-e10-baseline` stays built/pushed if we want the anchor later.
 
+### E10 RESULTS (2026-08-07) — new-fw rows REDISTRIBUTED (gemma↑ gpt↓); best 81.0; leaders pulled to 123
+- **Scores:** gemma-mp4 **81.015** (best) · maxfill-both 79.575 · maxfill-gemma 77.085 · gpt-mp4 71.070.
+- **Decomposition (via iso-gpt@1200 = 40.56 ⇒ gpt_row ≈ 81):**
+  - gpt single-post blind-2000 ≈ **81** (was ~108 old-fw — the new fw scores gpt LOWER); gpt validation-fill
+    ≈ 76 (blind-2000 > validation by ~5, partial-score banks the extra). **gpt multipost K4 ≈ 64** (DOWN ~17
+    — still dead; per-hop cost inflation is a serving cost the update didn't touch).
+  - gemma single-post blind-2000 ≈ **78** (was ~60.6 old-fw — the new fw + max-fill LIFTED gemma ~+18).
+    **gemma multipost K4 ≈ 81** (+3 over single-post — the parser fix flipped gemma multipost from negative
+    to marginally positive, but gemma is NOT saturating many posts: +3 ⇒ ~1 extra scoring post, not 3).
+- **Net:** new fw redistributed our score (gemma↑, gpt↓) to ~80, ~same as old 84 but leaders GAINED —
+  **top now 123.33 (Udit Jain), band ~105–123** (was ~116). max-fill was SAFE but FLAT: partial-score is
+  void-insurance, not throughput — it banks up to replay CAPACITY, which is still our binding wall. The
+  framework change rewarded whoever already had cheap-per-replay candidates; our per-candidate cost gap
+  (the real unsolved problem since E5) persists, now ~40 wide.
+- **The one positive lever:** gemma multipost is now net-positive (parser fix), but our +3 at K=4 means our
+  message doesn't saturate posts. Leaders at ~120 with gpt~81 ⇒ gemma_row ~160 ⇒ they get gemma to emit &
+  score ~7 posts/candidate. **Our `_forge_plan_message` is a Harmony (gpt) construct; gemma needs a
+  message that actually drives K http.post calls** (E4k/E5o found gemma emits ~1-2 — but that was the OLD
+  parser dropping later posts; the fixed parser makes this re-testable and now measurable offline).
+- **Best on the new board: ~81 (gemma-mp4).** Old 84.285 is invalidated; our 2 default reruns will land ~79.
+- **Recommended next (0 slots today):** (1) **re-pull the CURRENT top kernels** (post-Aug-5) — the 120-team
+  method may be published; we're 40 behind and guessing hasn't closed it. (2) **gemma post-saturation lab**
+  (real gemma on the new-parser sdk, no slot): measure http.posts emitted+scored per message form; find one
+  that saturates K=7. (3) then a gemma-multipost-K7 submission. Keep gpt on single-post blind-2000 (multipost
+  dead). Also weigh the PRIVATE board (final rank) + the host "harness-specific" warning on the forge.
+
+---
+
   | kernel (slug) | overrides | tests |
   |---|---|---|
   | `attack-e10-maxfill-both` | GEMMA_BLIND_TARGET=2000, GPT_BLIND_TARGET=2000 | the new core play — over-return, partial-score banks capacity (removes the gemma-700 gen-probe bottleneck) |
